@@ -1,8 +1,9 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>PahanaColombo</title>
+    <meta charset="UTF-8">
+    <title>PahanaColombo</title>
     <!-- External CSS Links -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -10,33 +11,8 @@
     <link href="assets/css/index.css" rel="stylesheet">
 </head>
 <body>
- <!-- Header -->
-    <header class="header" id="header">
-        <nav class="nav-container">
-            <a href="#" class="logo">
-                <i class="fas fa-book-open"></i>
-                Pahana Edu
-            </a>
-
-            <ul class="nav-menu">
-                <li><a href="#home">Home</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-
-            <div class="nav-actions">
-                <a href="login-signup.jsp" class="login-btn">Sign In</a>
-                <a href="login-signup.jsp" class="cta-btn">Get Started</a>
-            </div>
-
-            <div class="mobile-menu-toggle">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </nav>
-    </header>
+    <!-- Include Navigation Bar -->
+    <jsp:include page="includes/navbar.jsp" />
 
     <!-- Hero Section -->
     <section class="hero" id="home">
@@ -58,11 +34,11 @@
                 </p>
 
                 <div class="hero-actions">
-                    <a href="trial.html" class="btn-primary">
+                    <a href="view/trial.jsp" class="btn-primary">
                         <i class="fas fa-rocket"></i>
                         Start Free Trial
                     </a>
-                    <a href="demo.html" class="btn-secondary">
+                    <a href="view/demo.jsp" class="btn-secondary">
                         <i class="fas fa-play"></i>
                         Watch Demo
                     </a>
@@ -128,7 +104,7 @@
                         Process transactions with confidence using our reliable billing interface. 
                         Generate professional invoices and track all sales in real-time.
                     </p>
-                    <a href="billing.html" class="feature-link">
+                    <a href="view/billing.jsp" class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -142,7 +118,7 @@
                         Maintain comprehensive customer profiles with purchase history and preferences. 
                         Build stronger relationships with personalized service.
                     </p>
-                    <a href="customers.html" class="feature-link">
+                    <a href="view/customers.jsp" class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -156,7 +132,7 @@
                         Monitor your book inventory with precision. Set automated alerts for low stock 
                         and manage suppliers with ease.
                     </p>
-                    <a href="inventory.html" class="feature-link">
+                    <a href="view/inventory.jsp" class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -170,7 +146,7 @@
                         Make data-driven decisions with comprehensive business analytics. 
                         Professional reports for better business insights.
                     </p>
-                    <a href="reports.html" class="feature-link">
+                    <a href="view/reports.jsp" class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -184,7 +160,7 @@
                         Enterprise-grade security with 99.9% uptime guarantee. 
                         Your data is protected with medical-grade encryption standards.
                     </p>
-                    <a href="security.html" class="feature-link">
+                    <a href="view/security.jsp" class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -198,7 +174,7 @@
                         Access your system anywhere, anytime. Fully responsive design 
                         optimized for desktop, tablet, and mobile devices.
                     </p>
-                    <a href="mobile.html" class="feature-link">
+                    <a href="view/mobile.jsp" class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -286,70 +262,17 @@
                 </div>
             </div>
 
-            <a href="contact.html" class="btn-primary">
+            <a href="view/contact.jsp" class="btn-primary">
                 <i class="fas fa-calendar-check"></i>
                 Schedule Consultation
             </a>
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <h3>Pahana Edu</h3>
-                    <p>
-                        Professional bookshop solutions with medical-grade reliability. 
-                        Serving Colombo's academic community with trust and excellence since 2020.
-                    </p>
-                    <div class="social-links">
-                        <a href="#" title="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" title="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" title="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" title="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
-                    </div>
-                </div>
-
-                <div class="footer-section">
-                    <h4>Professional Services</h4>
-                    <ul>
-                        <li><a href="billing.html">Billing Management</a></li>
-                        <li><a href="inventory.html">Inventory Control</a></li>
-                        <li><a href="analytics.html">Customer Analytics</a></li>
-                        <li><a href="reports.html">Business Reports</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-section">
-                    <h4>Company</h4>
-                    <ul>
-                        <li><a href="about.html">About Pahana Edu</a></li>
-                        <li><a href="mission.html">Our Mission</a></li>
-                        <li><a href="careers.html">Career Opportunities</a></li>
-                        <li><a href="news.html">News & Updates</a></li>
-                    </ul>
-                </div>
-
-                <div class="footer-section">
-                    <h4>Professional Support</h4>
-                    <ul>
-                        <li><a href="help.html">Help Center</a></li>
-                        <li><a href="docs.html">System Documentation</a></li>
-                        <li><a href="support.html">Technical Support</a></li>
-                        <li><a href="status.html">System Status</a></li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="footer-bottom">
-                <p>&copy; 2024 Pahana Edu. All rights reserved. | Professional bookshop solutions you can trust.</p>
-            </div>
-        </div>
-    </footer>
+    <!-- Include Footer -->
+    <jsp:include page="includes/footer.jsp" />
 
     <!-- Custom JavaScript -->
     <script src="assets/js/index.js"></script>
-
 </body>
 </html>
