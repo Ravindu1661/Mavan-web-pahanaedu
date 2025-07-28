@@ -15,6 +15,7 @@ import com.pahanaedu.utils.DatabaseConnection;
 /**
  * Data Access Object for User operations using Singleton Pattern
  * Handles all database operations related to users
+ * Supports ADMIN, CUSTOMER, and STAFF roles
  */
 public class UserDAO {
     
@@ -131,6 +132,74 @@ public class UserDAO {
             
         } catch (SQLException e) {
             System.err.println("UserDAO: Error creating admin user - " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Create staff user
+     * @param user User object with user details
+     * @return true if user created successfully, false otherwise
+     */
+    public boolean createStaffUser(User user) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_USER)) {
+            
+            String hashedPassword = hashPassword(user.getPassword());
+            
+            statement.setString(1, user.getFirstName());
+            statement.setString(2, user.getLastName());
+            statement.setString(3, user.getEmail());
+            statement.setString(4, hashedPassword);
+            statement.setString(5, user.getPhone());
+            statement.setString(6, user.getRole());
+            statement.setString(7, user.getStatus() != null ? user.getStatus() : User.STATUS_ACTIVE);
+            
+            int rowsAffected = statement.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                System.out.println("UserDAO: Staff user created - " + user.getEmail());
+                return true;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("UserDAO: Error creating staff user - " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Create user with specified role (Admin, Customer, or Staff)
+     * @param user User object with user details
+     * @return true if user created successfully, false otherwise
+     */
+    public boolean createUserWithRole(User user) {
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_USER)) {
+            
+            String hashedPassword = hashPassword(user.getPassword());
+            
+            statement.setString(1, user.getFirstName());
+            statement.setString(2, user.getLastName());
+            statement.setString(3, user.getEmail());
+            statement.setString(4, hashedPassword);
+            statement.setString(5, user.getPhone());
+            statement.setString(6, user.getRole());
+            statement.setString(7, user.getStatus() != null ? user.getStatus() : User.STATUS_ACTIVE);
+            
+            int rowsAffected = statement.executeUpdate();
+            
+            if (rowsAffected > 0) {
+                System.out.println("UserDAO: User created with role " + user.getRole() + " - " + user.getEmail());
+                return true;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("UserDAO: Error creating user with role - " + e.getMessage());
             e.printStackTrace();
         }
         
@@ -261,6 +330,27 @@ public class UserDAO {
         }
         
         return users;
+    }
+    
+    /**
+     * Get all customers
+     */
+    public List<User> getAllCustomers() {
+        return getUsersByRole(User.ROLE_CUSTOMER);
+    }
+    
+    /**
+     * Get all staff members
+     */
+    public List<User> getAllStaff() {
+        return getUsersByRole(User.ROLE_STAFF);
+    }
+    
+    /**
+     * Get all admin users
+     */
+    public List<User> getAllAdmins() {
+        return getUsersByRole(User.ROLE_ADMIN);
     }
     
     /**
@@ -397,6 +487,27 @@ public class UserDAO {
         }
         
         return 0;
+    }
+    
+    /**
+     * Get customer count
+     */
+    public int getCustomerCount() {
+        return getUserCountByRole(User.ROLE_CUSTOMER);
+    }
+    
+    /**
+     * Get staff count
+     */
+    public int getStaffCount() {
+        return getUserCountByRole(User.ROLE_STAFF);
+    }
+    
+    /**
+     * Get admin count
+     */
+    public int getAdminCount() {
+        return getUserCountByRole(User.ROLE_ADMIN);
     }
     
     /**

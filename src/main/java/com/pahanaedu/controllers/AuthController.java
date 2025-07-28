@@ -22,6 +22,8 @@ import com.pahanaedu.services.PasswordResetService;
  * - Logout (/auth/logout)
  * - Password Reset (/auth/password-reset)
  * - Password Change (/auth/password-change)
+ * 
+ * Supports Admin, Customer, and Staff roles
  */
 @WebServlet({
     "/auth/login", 

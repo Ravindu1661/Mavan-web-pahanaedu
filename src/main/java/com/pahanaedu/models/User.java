@@ -4,7 +4,7 @@ import java.sql.Timestamp;
 
 /**
  * User model class for Pahana Edu system
- * Supports only ADMIN and CUSTOMER roles
+ * Supports ADMIN, CUSTOMER, and STAFF roles
  */
 public class User {
     // User properties
@@ -19,9 +19,10 @@ public class User {
     private Timestamp createdAt;
     private Timestamp updatedAt;
     
-    // Role constants - Only Admin and Customer
+    // Role constants - Admin, Customer, and Staff
     public static final String ROLE_ADMIN = "ADMIN";
     public static final String ROLE_CUSTOMER = "CUSTOMER";
+    public static final String ROLE_STAFF = "STAFF";
     
     // Status constants
     public static final String STATUS_ACTIVE = "active";
@@ -54,7 +55,7 @@ public class User {
         this.status = STATUS_ACTIVE;
     }
     
-    // Constructor with role (for admin creation)
+    // Constructor with role (for admin/staff creation)
     public User(String firstName, String lastName, String email, String password, String phone, String role) {
         this.firstName = firstName;
         this.lastName = lastName;
@@ -116,6 +117,10 @@ public class User {
     
     public boolean isCustomer() {
         return ROLE_CUSTOMER.equals(this.role);
+    }
+    
+    public boolean isStaff() {
+        return ROLE_STAFF.equals(this.role);
     }
     
     // Status checking methods

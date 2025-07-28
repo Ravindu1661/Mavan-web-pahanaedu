@@ -141,7 +141,15 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
         }
-        
+		 .stats-card.staff {
+		    background: linear-gradient(135deg, #f39c12, #e67e22);
+		    color: white;
+		}
+		
+		.stats-card.staff:hover {
+		    transform: translateY(-5px);
+		    box-shadow: 0 8px 25px rgba(243, 156, 18, 0.3);
+		}
         .card:hover {
             transform: translateY(-2px);
         }
@@ -309,6 +317,17 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-lg-2 col-md-4 col-sm-6">
+				    <div class="stats-card staff">
+				        <div class="d-flex justify-content-between align-items-center">
+				            <div>
+				                <h3 id="totalStaff">-</h3>
+				                <p class="mb-0">Staff</p>
+				            </div>
+				            <i class="fas fa-user-tie fa-2x opacity-75"></i>
+				        </div>
+				    </div>
+				</div>
                 <div class="col-lg-2 col-md-4 col-sm-6">
                     <div class="stats-card products">
                         <div class="d-flex justify-content-between align-items-center">

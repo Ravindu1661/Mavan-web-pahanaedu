@@ -203,6 +203,7 @@ function updateDashboardStats(stats) {
     const elements = {
         'totalUsers': stats.totalUsers || 0,
         'totalCustomers': stats.totalCustomers || 0,
+        'totalStaff': stats.totalStaff || 0, // New stat for staff count
         'totalProducts': stats.totalProducts || 0,
         'activeProducts': stats.activeProducts || 0,
         'totalOrders': stats.totalOrders || 0,
@@ -220,7 +221,6 @@ function updateDashboardStats(stats) {
         }
     });
 }
-
 // ===================== USER MANAGEMENT =====================
 
 /**
@@ -268,7 +268,7 @@ function displayUsers(users) {
             <td>${escapeHtml(user.firstName)} ${escapeHtml(user.lastName)}</td>
             <td>${escapeHtml(user.email)}</td>
             <td>${escapeHtml(user.phone || 'N/A')}</td>
-            <td><span class="badge ${user.role === 'ADMIN' ? 'bg-danger' : 'bg-primary'}">${user.role}</span></td>
+            <td><span class="badge ${getRoleBadgeClass(user.role)}">${user.role}</span></td>
             <td><span class="badge ${user.status === 'active' ? 'bg-success' : 'bg-secondary'}">${user.status}</span></td>
             <td>${formatDate(user.createdAt)}</td>
             <td>
@@ -285,9 +285,23 @@ function displayUsers(users) {
         </tr>
     `).join('');
 }
-
 /**
- * Filter users
+ * Get role badge CSS class - New helper function
+ */
+function getRoleBadgeClass(role) {
+    switch(role) {
+        case 'ADMIN':
+            return 'bg-danger';
+        case 'STAFF':
+            return 'bg-warning';
+        case 'CUSTOMER':
+            return 'bg-primary';
+        default:
+            return 'bg-secondary';
+    }
+}
+/**
+ * Filter users - Updated to handle STAFF role in search
  */
 function filterUsers() {
     const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
@@ -296,14 +310,16 @@ function filterUsers() {
         user.firstName.toLowerCase().includes(searchTerm) ||
         user.lastName.toLowerCase().includes(searchTerm) ||
         user.email.toLowerCase().includes(searchTerm) ||
+        user.role.toLowerCase().includes(searchTerm) ||
         (user.phone && user.phone.includes(searchTerm))
     );
 
     displayUsers(filteredUsers);
 }
 
+
 /**
- * Show user modal
+ * Show user modal - Updated with STAFF role support
  */
 function showUserModal(userId = null) {
     editingItem = userId;
@@ -362,9 +378,11 @@ function showUserModal(userId = null) {
                                         <label for="role" class="form-label">Role *</label>
                                         <select class="form-select" id="role" required ${isEdit ? 'onchange="checkRoleChange()"' : ''}>
                                             <option value="CUSTOMER" ${isEdit && user.role === 'CUSTOMER' ? 'selected' : ''}>Customer</option>
-                                            ${!isEdit ? '<option value="ADMIN">Admin</option>' : ''}
+                                            <option value="STAFF" ${isEdit && user.role === 'STAFF' ? 'selected' : ''}>Staff</option>
+                                            ${!isEdit || user.role === 'ADMIN' ? '<option value="ADMIN" ' + (isEdit && user.role === 'ADMIN' ? 'selected' : '') + '>Admin</option>' : ''}
                                         </select>
-                                        ${isEdit && user.role === 'ADMIN' ? '<small class="text-warning">Admin role cannot be changed</small>' : ''}
+                                        ${isEdit && user.role === 'ADMIN' ? '<small class="text-warning">Admin role can only be changed to Staff</small>' : ''}
+                                        ${isEdit && user.role === 'STAFF' ? '<small class="text-info">Staff role can be changed to Customer or Admin</small>' : ''}
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -377,6 +395,12 @@ function showUserModal(userId = null) {
                                     </div>
                                 </div>
                             </div>
+                            ${isEdit && user.role === 'STAFF' ? `
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Staff Role:</strong> This user has staff privileges and can access admin functions except user management.
+                            </div>
+                            ` : ''}
                         </form>
                     </div>
                     <div class="modal-footer">
@@ -392,19 +416,67 @@ function showUserModal(userId = null) {
 
     showModal(modalHtml);
 }
-
 /**
- * Check role change and prevent customer to admin conversion
+ * Check role change and handle STAFF role conversions - Updated
  */
 function checkRoleChange() {
     const role = document.getElementById('role').value;
     const user = allUsers.find(u => u.id === editingItem);
     
-    if (user && user.role === 'CUSTOMER' && role === 'ADMIN') {
-        showError('Cannot change customer role to admin');
-        document.getElementById('role').value = 'CUSTOMER';
+    if (user) {
+        // Allow all role changes for staff and admin
+        if (user.role === 'CUSTOMER' && (role === 'ADMIN' || role === 'STAFF')) {
+            // Show confirmation for customer to admin/staff conversion
+            const roleText = role === 'ADMIN' ? 'Administrator' : 'Staff Member';
+            Swal.fire({
+                title: 'Role Change Confirmation',
+                text: `Are you sure you want to change this customer to ${roleText}? This will give them additional privileges.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, change role',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    document.getElementById('role').value = 'CUSTOMER';
+                }
+            });
+        }
+        
+        if (user.role === 'ADMIN' && role === 'CUSTOMER') {
+            // Warn about admin to customer conversion
+            Swal.fire({
+                title: 'Warning: Admin Demotion',
+                text: 'Changing an Admin to Customer will remove all administrative privileges. Are you sure?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, demote to customer',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#d33'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    document.getElementById('role').value = 'ADMIN';
+                }
+            });
+        }
+        
+        if (user.role === 'STAFF' && role === 'CUSTOMER') {
+            // Warn about staff to customer conversion
+            Swal.fire({
+                title: 'Staff Demotion',
+                text: 'Changing a Staff member to Customer will remove their staff privileges. Continue?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, change to customer',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (!result.isConfirmed) {
+                    document.getElementById('role').value = 'STAFF';
+                }
+            });
+        }
     }
 }
+
 
 /**
  * Save user

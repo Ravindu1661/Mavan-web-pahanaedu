@@ -27,6 +27,7 @@ import com.pahanaedu.services.AdminService;
  * Enhanced Admin Controller for Admin Panel Management
  * Handles all admin operations: users, products, categories, promo codes, orders
  * Supports file uploads for product images
+ * Updated with STAFF role support
  */
 @WebServlet({
     "/admin/dashboard",
@@ -82,8 +83,8 @@ public class AdminController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        // Check admin authentication
-        if (!isAdminAuthenticated(request)) {
+        // Check admin or staff authentication
+        if (!isAuthorizedUser(request)) {
             response.sendRedirect(request.getContextPath() + "/login-signup.jsp");
             return;
         }
@@ -99,7 +100,12 @@ public class AdminController extends HttpServlet {
                     handleDashboardPage(request, response);
                     break;
                 case "users":
-                    handleUsersPage(request, response);
+                    // Only admins can access user management
+                    if (isAdminUser(request)) {
+                        handleUsersPage(request, response);
+                    } else {
+                        response.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied. Admin privileges required.");
+                    }
                     break;
                 case "categories":
                     handleCategoriesPage(request, response);
@@ -128,14 +134,20 @@ public class AdminController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         
-        // Check admin authentication
-        if (!isAdminAuthenticated(request)) {
+        // Check admin or staff authentication
+        if (!isAuthorizedUser(request)) {
             sendJsonError(response, "Unauthorized access", HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
         
         String requestURI = request.getRequestURI();
         String action = getActionFromURI(requestURI);
+        
+        // Check if user management requires admin privileges
+        if ("users".equals(action) && !isAdminUser(request)) {
+            sendJsonError(response, "Access denied. Admin privileges required for user management.", HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         
         System.out.println("AdminController: Processing POST request - " + action);
         
@@ -155,7 +167,12 @@ public class AdminController extends HttpServlet {
                         adminService.handleDashboardStats(request, response);
                         break;
                     case "users":
-                        adminService.handleUserManagement(request, response);
+                        // Double check admin privileges for user management
+                        if (isAdminUser(request)) {
+                            adminService.handleUserManagement(request, response);
+                        } else {
+                            sendJsonError(response, "Access denied. Admin privileges required for user management.", HttpServletResponse.SC_FORBIDDEN);
+                        }
                         break;
                     case "categories":
                         adminService.handleCategoryManagement(request, response);
@@ -366,9 +383,9 @@ public class AdminController extends HttpServlet {
     }
     
     /**
-     * Check if user is authenticated as admin
+     * Check if user is authenticated as admin or staff (authorized users)
      */
-    private boolean isAdminAuthenticated(HttpServletRequest request) {
+    private boolean isAuthorizedUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         
         if (session == null || !Boolean.TRUE.equals(session.getAttribute("isLoggedIn"))) {
@@ -377,15 +394,54 @@ public class AdminController extends HttpServlet {
         }
         
         String userRole = (String) session.getAttribute("userRole");
-        boolean isAdmin = "ADMIN".equals(userRole);
+        boolean isAuthorized = "ADMIN".equals(userRole) || "STAFF".equals(userRole);
         
-        if (!isAdmin) {
-            System.out.println("AdminController: User role is not ADMIN: " + userRole);
+        if (!isAuthorized) {
+            System.out.println("AdminController: User role is not ADMIN or STAFF: " + userRole);
         } else {
-            System.out.println("AdminController: Admin authentication successful");
+            System.out.println("AdminController: User authentication successful - Role: " + userRole);
         }
         
-        return isAdmin;
+        return isAuthorized;
+    }
+    
+    /**
+     * Check if user is authenticated as admin only
+     */
+    private boolean isAdminUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        
+        if (session == null || !Boolean.TRUE.equals(session.getAttribute("isLoggedIn"))) {
+            return false;
+        }
+        
+        String userRole = (String) session.getAttribute("userRole");
+        return "ADMIN".equals(userRole);
+    }
+    
+    /**
+     * Check if user is authenticated as staff only
+     */
+    private boolean isStaffUser(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        
+        if (session == null || !Boolean.TRUE.equals(session.getAttribute("isLoggedIn"))) {
+            return false;
+        }
+        
+        String userRole = (String) session.getAttribute("userRole");
+        return "STAFF".equals(userRole);
+    }
+    
+    /**
+     * Get user role from session
+     */
+    private String getUserRole(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) {
+            return (String) session.getAttribute("userRole");
+        }
+        return null;
     }
     
     /**
@@ -397,7 +453,7 @@ public class AdminController extends HttpServlet {
     }
     
     /**
-     * Handle users management page request
+     * Handle users management page request (Admin only)
      */
     private void handleUsersPage(HttpServletRequest request, HttpServletResponse response) 
             throws IOException {

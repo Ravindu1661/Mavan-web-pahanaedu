@@ -12,7 +12,7 @@ import com.pahanaedu.models.User;
 
 /**
  * Login Service using Singleton Pattern
- * Handles authentication for Admin and Customer roles only
+ * Handles authentication for Admin, Customer, and Staff roles
  */
 public class LoginService {
     
@@ -191,9 +191,10 @@ public class LoginService {
         session.setAttribute("isLoggedIn", true);
         session.setAttribute("loginTime", System.currentTimeMillis());
         
-        // Set role flags
+        // Set role flags - Support for all three roles
         session.setAttribute("isAdmin", user.isAdmin());
         session.setAttribute("isCustomer", user.isCustomer());
+        session.setAttribute("isStaff", user.isStaff());
         
         // Configure session timeout
         boolean rememberMeEnabled = "on".equals(rememberMe) || "true".equals(rememberMe);
@@ -206,7 +207,7 @@ public class LoginService {
             session.setAttribute("rememberMe", false);
         }
         
-        System.out.println("LoginService: Session configured successfully");
+        System.out.println("LoginService: Session configured successfully with role: " + user.getRole());
     }
     
     /**
@@ -220,6 +221,8 @@ public class LoginService {
         switch (role.toUpperCase()) {
             case "ADMIN":
                 return "admin-dashboard.jsp";
+            case "STAFF":
+                return "staff-dashboard.jsp";
             case "CUSTOMER":
             default:
                 return "customer-dashboard.jsp";
@@ -237,6 +240,8 @@ public class LoginService {
         switch (role.toUpperCase()) {
             case "ADMIN":
                 return "Admin login successful! Redirecting to dashboard...";
+            case "STAFF":
+                return "Staff login successful! Redirecting to dashboard...";
             case "CUSTOMER":
             default:
                 return "Login successful! Welcome back!";
@@ -259,6 +264,8 @@ public class LoginService {
         
         out.print(jsonResponse);
         out.flush();
+        
+        System.out.println("LoginService: Success response sent for role: " + role);
     }
     
     /**
@@ -274,6 +281,8 @@ public class LoginService {
         
         out.print(jsonResponse);
         out.flush();
+        
+        System.out.println("LoginService: Error response sent - " + message);
     }
     
     /**

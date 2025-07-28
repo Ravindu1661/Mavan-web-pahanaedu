@@ -54,6 +54,12 @@ public class AdminService {
             long totalCustomers = allUsers.stream()
                 .filter(user -> User.ROLE_CUSTOMER.equals(user.getRole()))
                 .count();
+            long totalStaff = allUsers.stream()
+                .filter(user -> "STAFF".equals(user.getRole()))
+                .count();
+            long totalAdmins = allUsers.stream()
+                .filter(user -> User.ROLE_ADMIN.equals(user.getRole()))
+                .count();
             int totalProducts = allProducts.size();
             long activeProducts = allProducts.stream()
                 .filter(product -> product.isActive())
@@ -92,11 +98,13 @@ public class AdminService {
                 .map(order -> order.getFinalAmount())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
             
-            // Create stats JSON
+            // Create stats JSON - Updated to include staff count
             StringBuilder stats = new StringBuilder();
             stats.append("{");
             stats.append("\"totalUsers\": ").append(totalUsers).append(",");
             stats.append("\"totalCustomers\": ").append(totalCustomers).append(",");
+            stats.append("\"totalStaff\": ").append(totalStaff).append(",");
+            stats.append("\"totalAdmins\": ").append(totalAdmins).append(",");
             stats.append("\"totalProducts\": ").append(totalProducts).append(",");
             stats.append("\"activeProducts\": ").append(activeProducts).append(",");
             stats.append("\"totalOrders\": ").append(totalOrders).append(",");
@@ -749,6 +757,10 @@ public class AdminService {
     }
     
     // CRUD Operations Implementation
+    /**
+     * Fixed handleCreateUser method in AdminService.java
+     * Replace your existing handleCreateUser method with this updated version
+     */
     private void handleCreateUser(HttpServletRequest request, HttpServletResponse response) 
             throws IOException {
         String firstName = request.getParameter("firstName");
@@ -773,6 +785,20 @@ public class AdminService {
         boolean success = userDAO.createUser(user);
         sendBooleanResponse(response, success, 
             success ? "User created successfully" : "Failed to create user");
+    }
+
+    /**
+     * Validate if the provided role is valid
+     */
+    private boolean isValidRole(String role) {
+        if (role == null || role.trim().isEmpty()) {
+            return false;
+        }
+        
+        String trimmedRole = role.trim();
+        return "ADMIN".equals(trimmedRole) || 
+               "STAFF".equals(trimmedRole) || 
+               "CUSTOMER".equals(trimmedRole);
     }
     
     private void handleUpdateUser(HttpServletRequest request, HttpServletResponse response) 

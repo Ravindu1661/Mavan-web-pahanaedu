@@ -12,7 +12,7 @@ import com.pahanaedu.models.User;
 
 /**
  * Signup Service using Singleton Pattern
- * Handles customer registration only
+ * Handles customer registration only (Admin and Staff are created through admin panel)
  */
 public class SignupService {
     
@@ -193,6 +193,7 @@ public class SignupService {
         // Set role flags
         session.setAttribute("isAdmin", false);
         session.setAttribute("isCustomer", true);
+        session.setAttribute("isStaff", false);
         
         // Set session timeout
         session.setMaxInactiveInterval(30 * 60); // 30 minutes
@@ -284,6 +285,8 @@ public class SignupService {
         switch (role.toUpperCase()) {
             case "ADMIN":
                 return "admin-dashboard.jsp";
+            case "STAFF":
+                return "staff-dashboard.jsp";
             case "CUSTOMER":
             default:
                 return "customer-dashboard.jsp";
