@@ -22,11 +22,12 @@ import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 import com.pahanaedu.services.AdminService;
+import com.pahanaedu.utils.FileUploadHandler;
 
 /**
  * Enhanced Admin Controller for Admin Panel Management
  * Handles all admin operations: users, products, categories, promo codes, orders
- * Supports file uploads for product images
+ * Supports file uploads for product images using FileUploadHandler
  * Updated with STAFF role support
  */
 @WebServlet({
@@ -54,6 +55,8 @@ public class AdminController extends HttpServlet {
     private static final int MAX_REQUEST_SIZE = 1024 * 1024 * 10; // 10MB
     private static final String[] ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp"};
     
+ // AdminController.java එකේ init() method එක මේකෙන් replace කරන්න
+
     @Override
     public void init() throws ServletException {
         try {
@@ -73,12 +76,17 @@ public class AdminController extends HttpServlet {
             } else {
                 System.out.println("AdminController: Upload directory exists at " + uploadPath);
             }
+            
+            // Sync project files to deployment directory on startup
+            String webAppPath = getServletContext().getRealPath("");
+            FileUploadHandler.syncProjectFilesToDeployment(webAppPath);
+            System.out.println("AdminController: Project files synced to deployment directory");
+            
         } catch (Exception e) {
             System.err.println("AdminController: Failed to initialize service - " + e.getMessage());
             throw new ServletException("Failed to initialize admin service", e);
         }
     }
-    
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
@@ -207,25 +215,25 @@ public class AdminController extends HttpServlet {
     }
     
     /**
-     * Handle product operations with file upload support
+     * Handle product operations with file upload support using FileUploadHandler
      */
     private void handleProductWithFileUpload(HttpServletRequest request, HttpServletResponse response) 
             throws ServletException, IOException {
         try {
-            String actionParam = null;
             String imagePath = null;
             
-            // Parse multipart form data
+            // Parse multipart form data and handle image upload
             for (Part part : request.getParts()) {
                 String partName = part.getName();
                 
-                if ("action".equals(partName)) {
-                    actionParam = getPartValue(part);
-                } else if ("productImage".equals(partName) && part.getSize() > 0) {
-                    // Handle file upload
-                    imagePath = handleImageUpload(part, request);
+                if ("productImage".equals(partName) && part.getSize() > 0) {
+                    // Use FileUploadHandler instead of custom upload logic
+                    String webAppPath = getServletContext().getRealPath("");
+                    imagePath = FileUploadHandler.uploadProductImage(part, webAppPath);
+                    
                     if (imagePath != null) {
-                        System.out.println("AdminController: Image uploaded successfully - " + imagePath);
+                        System.out.println("AdminController: Image uploaded via FileUploadHandler - " + imagePath);
+                        break;
                     }
                 }
             }
@@ -246,56 +254,7 @@ public class AdminController extends HttpServlet {
     }
     
     /**
-     * Handle image file upload
-     */
-    private String handleImageUpload(Part filePart, HttpServletRequest request) throws IOException {
-        if (filePart == null || filePart.getSize() == 0) {
-            return null;
-        }
-        
-        // Validate file size
-        if (filePart.getSize() > MAX_FILE_SIZE) {
-            throw new IOException("File size exceeds maximum limit of 5MB");
-        }
-        
-        // Get original filename
-        String originalFileName = getFileName(filePart);
-        if (originalFileName == null || originalFileName.isEmpty()) {
-            throw new IOException("Invalid file name");
-        }
-        
-        // Validate file extension
-        String extension = getFileExtension(originalFileName).toLowerCase();
-        if (!isValidExtension(extension)) {
-            throw new IOException("Invalid file type. Only JPG, PNG, GIF, and WEBP files are allowed");
-        }
-        
-        // Generate unique filename
-        String uniqueFileName = generateUniqueFileName(extension);
-        
-        // Create upload directory path
-        String uploadPath = getServletContext().getRealPath("") + File.separator + UPLOAD_DIRECTORY;
-        File uploadDir = new File(uploadPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
-        
-        // Save file
-        String filePath = uploadPath + File.separator + uniqueFileName;
-        try {
-            Files.copy(filePart.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
-            System.out.println("AdminController: File saved to " + filePath);
-        } catch (IOException e) {
-            System.err.println("AdminController: Failed to save file - " + e.getMessage());
-            throw new IOException("Failed to save uploaded file");
-        }
-        
-        // Return relative path for database storage
-        return UPLOAD_DIRECTORY + "/" + uniqueFileName;
-    }
-    
-    /**
-     * Delete uploaded image file
+     * Delete uploaded image file using FileUploadHandler
      */
     public boolean deleteImageFile(String imagePath) {
         if (imagePath == null || imagePath.isEmpty()) {
@@ -303,67 +262,20 @@ public class AdminController extends HttpServlet {
         }
         
         try {
-            String fullPath = getServletContext().getRealPath("") + File.separator + imagePath;
-            File file = new File(fullPath);
-            if (file.exists()) {
-                boolean deleted = file.delete();
-                if (deleted) {
-                    System.out.println("AdminController: Image file deleted - " + imagePath);
-                } else {
-                    System.err.println("AdminController: Failed to delete image file - " + imagePath);
-                }
-                return deleted;
+            String webAppPath = getServletContext().getRealPath("");
+            boolean deleted = FileUploadHandler.deleteProductImage(imagePath, webAppPath);
+            
+            if (deleted) {
+                System.out.println("AdminController: Image file deleted via FileUploadHandler - " + imagePath);
+            } else {
+                System.err.println("AdminController: Failed to delete image file via FileUploadHandler - " + imagePath);
             }
-            return true; // File doesn't exist, consider it as successfully deleted
+            
+            return deleted;
         } catch (Exception e) {
             System.err.println("AdminController: Error deleting image file - " + e.getMessage());
             return false;
         }
-    }
-    
-    /**
-     * Get filename from Part header
-     */
-    private String getFileName(Part part) {
-        String contentDisposition = part.getHeader("content-disposition");
-        if (contentDisposition != null) {
-            for (String content : contentDisposition.split(";")) {
-                if (content.trim().startsWith("filename")) {
-                    String fileName = content.substring(content.indexOf('=') + 1).trim();
-                    return fileName.replace("\"", "");
-                }
-            }
-        }
-        return null;
-    }
-    
-    /**
-     * Get file extension
-     */
-    private String getFileExtension(String fileName) {
-        if (fileName != null && fileName.lastIndexOf('.') != -1) {
-            return fileName.substring(fileName.lastIndexOf('.'));
-        }
-        return "";
-    }
-    
-    /**
-     * Check if extension is valid
-     */
-    private boolean isValidExtension(String extension) {
-        for (String allowed : ALLOWED_EXTENSIONS) {
-            if (allowed.equals(extension)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Generate unique filename
-     */
-    private String generateUniqueFileName(String extension) {
-        return "product_" + UUID.randomUUID().toString() + extension;
     }
     
     /**

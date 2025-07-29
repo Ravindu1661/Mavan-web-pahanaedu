@@ -14,6 +14,7 @@ import javax.servlet.http.Part;
 
 import com.pahanaedu.dao.*;
 import com.pahanaedu.models.*;
+import com.pahanaedu.utils.FileUploadHandler;
 
 public class AdminService {
     private static AdminService instance = null;
@@ -369,7 +370,7 @@ public class AdminService {
         }
     }
     
-    // නව Product Update - Image Upload Support සමඟ
+    // නව Product Update - FileUploadHandler සමඟ
     private void handleUpdateProduct(HttpServletRequest request, HttpServletResponse response) 
             throws IOException {
         try {
@@ -402,16 +403,18 @@ public class AdminService {
             String uploadedImagePath = (String) request.getAttribute("uploadedImagePath");
             
             if (uploadedImagePath != null && !uploadedImagePath.trim().isEmpty()) {
-                // New image uploaded
+                // New image uploaded via FileUploadHandler
                 imagePath = uploadedImagePath;
-                System.out.println("AdminService: Using new uploaded image - " + imagePath);
+                System.out.println("AdminService: Using new uploaded image via FileUploadHandler - " + imagePath);
                 
                 // Delete old image if it exists and is different from new one
                 if (oldImagePath != null && !oldImagePath.equals(imagePath)) {
                     try {
                         String webAppPath = request.getServletContext().getRealPath("");
-                        deleteProductImage(oldImagePath, webAppPath);
-                        System.out.println("AdminService: Deleted old image - " + oldImagePath);
+                        boolean deleted = FileUploadHandler.deleteProductImage(oldImagePath, webAppPath);
+                        if (deleted) {
+                            System.out.println("AdminService: Deleted old image via FileUploadHandler - " + oldImagePath);
+                        }
                     } catch (Exception e) {
                         System.err.println("AdminService: Warning - Could not delete old image: " + e.getMessage());
                     }
@@ -457,7 +460,7 @@ public class AdminService {
         }
     }
     
-    // නව Product Delete - Image Delete Support සමඟ
+    // නව Product Delete - FileUploadHandler සමඟ
     private void handleDeleteProduct(HttpServletRequest request, HttpServletResponse response) 
             throws IOException {
         try {
@@ -476,15 +479,16 @@ public class AdminService {
             boolean success = productDAO.deleteProduct(id);
             
             if (success) {
-                // Delete associated image file if exists
+                // Delete associated image file using FileUploadHandler if exists
                 if (imagePath != null && !imagePath.trim().isEmpty()) {
                     try {
                         String webAppPath = request.getServletContext().getRealPath("");
-                        boolean imageDeleted = deleteProductImage(imagePath, webAppPath);
+                        boolean imageDeleted = FileUploadHandler.deleteProductImage(imagePath, webAppPath);
+                        
                         if (imageDeleted) {
-                            System.out.println("AdminService: Product and image deleted successfully - " + imagePath);
+                            System.out.println("AdminService: Product and image deleted successfully via FileUploadHandler - " + imagePath);
                         } else {
-                            System.out.println("AdminService: Product deleted but image deletion failed - " + imagePath);
+                            System.out.println("AdminService: Product deleted but image deletion failed via FileUploadHandler - " + imagePath);
                         }
                     } catch (Exception e) {
                         System.err.println("AdminService: Warning - Product deleted but could not delete image: " + e.getMessage());
@@ -503,32 +507,6 @@ public class AdminService {
             System.err.println("AdminService: Error deleting product - " + e.getMessage());
             e.printStackTrace();
             sendErrorResponse(response, "Error deleting product: " + e.getMessage());
-        }
-    }
-    
-    // Image deletion utility method
-    private boolean deleteProductImage(String imagePath, String webAppPath) {
-        if (imagePath == null || imagePath.trim().isEmpty()) {
-            return true; // Nothing to delete
-        }
-        
-        try {
-            java.io.File imageFile = new java.io.File(webAppPath, imagePath);
-            if (imageFile.exists()) {
-                boolean deleted = imageFile.delete();
-                if (deleted) {
-                    System.out.println("AdminService: Image file deleted successfully - " + imagePath);
-                } else {
-                    System.err.println("AdminService: Failed to delete image file - " + imagePath);
-                }
-                return deleted;
-            } else {
-                System.out.println("AdminService: Image file does not exist - " + imagePath);
-                return true; // File doesn't exist, consider as successfully deleted
-            }
-        } catch (Exception e) {
-            System.err.println("AdminService: Error deleting image file - " + e.getMessage());
-            return false;
         }
     }
     
@@ -761,16 +739,21 @@ public class AdminService {
      * Fixed handleCreateUser method in AdminService.java
      * Replace your existing handleCreateUser method with this updated version
      */
+    /**
+     * Simple and clean handleCreateUser method for AdminService.java
+     * Replace your existing method with this version
+     */
     private void handleCreateUser(HttpServletRequest request, HttpServletResponse response) 
             throws IOException {
+        
         String firstName = request.getParameter("firstName");
         String lastName = request.getParameter("lastName");
         String email = request.getParameter("email");
         String phone = request.getParameter("phone");
         String role = request.getParameter("role");
-        String password = request.getParameter("password"); // Get password from request
+        String password = request.getParameter("password");
         
-        // Validate password
+        // Basic validation
         if (password == null || password.trim().isEmpty()) {
             sendErrorResponse(response, "Password is required");
             return;
@@ -780,7 +763,9 @@ public class AdminService {
             return;
         }
         
+        // Create user with specified role
         User user = new User(firstName, lastName, email, password, phone, role);
+        user.setStatus("active");
         
         boolean success = userDAO.createUser(user);
         sendBooleanResponse(response, success, 

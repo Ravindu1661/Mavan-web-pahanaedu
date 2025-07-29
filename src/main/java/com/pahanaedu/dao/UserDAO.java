@@ -38,6 +38,9 @@ public class UserDAO {
     private static final String SELECT_USERS_BY_ROLE = 
         "SELECT * FROM users WHERE role = ? ORDER BY created_at DESC";
     
+    private static final String SELECT_ACTIVE_USERS_BY_ROLE = 
+        "SELECT * FROM users WHERE role = ? AND status = 'active' ORDER BY created_at DESC";
+    
     private static final String UPDATE_USER = 
         "UPDATE users SET first_name = ?, last_name = ?, email = ?, phone = ?, status = ? WHERE id = ?";
     
@@ -68,31 +71,35 @@ public class UserDAO {
     }
     
     /**
-     * Create new customer user
+     * Create new user
      * @param user User object with user details
      * @return true if user created successfully, false otherwise
      */
     public boolean createUser(User user) {
-        user.setRole(User.ROLE_CUSTOMER);
-        user.setStatus(User.STATUS_ACTIVE);
-        
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(INSERT_USER)) {
             
+            // Set default status if not provided
+            if (user.getStatus() == null || user.getStatus().trim().isEmpty()) {
+                user.setStatus(User.STATUS_ACTIVE);
+            }
+            
+            // Hash password
             String hashedPassword = hashPassword(user.getPassword());
             
+            // Set parameters
             statement.setString(1, user.getFirstName());
             statement.setString(2, user.getLastName());
             statement.setString(3, user.getEmail());
             statement.setString(4, hashedPassword);
             statement.setString(5, user.getPhone());
-            statement.setString(6, user.getRole());
+            statement.setString(6, user.getRole()); // Use role from user object
             statement.setString(7, user.getStatus());
             
             int rowsAffected = statement.executeUpdate();
             
             if (rowsAffected > 0) {
-                System.out.println("UserDAO: Customer created successfully - " + user.getEmail());
+                System.out.println("UserDAO: User created successfully - " + user.getEmail() + " with role: " + user.getRole());
                 return true;
             }
             
@@ -333,10 +340,41 @@ public class UserDAO {
     }
     
     /**
+     * Get active users by role (for POS system)
+     */
+    public List<User> getActiveUsersByRole(String role) {
+        List<User> users = new ArrayList<>();
+        
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(SELECT_ACTIVE_USERS_BY_ROLE)) {
+            
+            statement.setString(1, role);
+            ResultSet resultSet = statement.executeQuery();
+            
+            while (resultSet.next()) {
+                users.add(extractUserFromResultSet(resultSet));
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("UserDAO: Error getting active users by role - " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return users;
+    }
+    
+    /**
      * Get all customers
      */
     public List<User> getAllCustomers() {
         return getUsersByRole(User.ROLE_CUSTOMER);
+    }
+    
+    /**
+     * Get active customers (for POS system)
+     */
+    public List<User> getActiveCustomers() {
+        return getActiveUsersByRole(User.ROLE_CUSTOMER);
     }
     
     /**

@@ -130,7 +130,7 @@ public class SignupService {
                 lastName.trim(),
                 email.trim().toLowerCase(),
                 password,
-                cleanPhone
+                cleanPhone, cleanPhone
             );
             
             newUser.setRole(User.ROLE_CUSTOMER);

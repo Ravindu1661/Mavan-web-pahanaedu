@@ -10,7 +10,8 @@ import java.util.UUID;
 import javax.servlet.http.Part;
 
 /**
- * Utility class for handling file uploads
+ * Enhanced utility class for handling file uploads - Dual Storage System
+ * Saves images to both project source (persistent) and server deployment (immediate access)
  */
 public class FileUploadHandler {
     
@@ -19,7 +20,7 @@ public class FileUploadHandler {
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
     
     /**
-     * Upload product image
+     * Upload product image to both project source and deployment directories
      */
     public static String uploadProductImage(Part filePart, String webAppPath) throws IOException {
         if (filePart == null || filePart.getSize() == 0) {
@@ -46,23 +47,86 @@ public class FileUploadHandler {
         // Generate unique filename
         String uniqueFileName = generateUniqueFileName(extension);
         
-        // Create upload directory if it doesn't exist
-        String uploadPath = webAppPath + UPLOAD_DIR;
-        File uploadDir = new File(uploadPath);
-        if (!uploadDir.exists()) {
-            uploadDir.mkdirs();
-        }
+        // Get both upload paths
+        String projectUploadPath = getProjectUploadPath();
+        String deploymentUploadPath = getDeploymentUploadPath(webAppPath);
         
-        // Save file
-        Path filePath = Paths.get(uploadPath + uniqueFileName);
-        Files.copy(filePart.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        // Create upload directories if they don't exist
+        createDirectoryIfNotExists(projectUploadPath);
+        createDirectoryIfNotExists(deploymentUploadPath);
+        
+        // Debug information
+        System.out.println("=== DUAL STORAGE FILE UPLOAD DEBUG ===");
+        System.out.println("Original filename: " + originalFileName);
+        System.out.println("Generated filename: " + uniqueFileName);
+        System.out.println("Project upload path: " + projectUploadPath);
+        System.out.println("Deployment upload path: " + deploymentUploadPath);
+        
+        // Save file to project source directory first (persistent storage)
+        Path projectFilePath = Paths.get(projectUploadPath + uniqueFileName);
+        Files.copy(filePart.getInputStream(), projectFilePath, StandardCopyOption.REPLACE_EXISTING);
+        
+        // Also save to deployment directory (immediate access)
+        Path deploymentFilePath = Paths.get(deploymentUploadPath + uniqueFileName);
+        Files.copy(Files.newInputStream(projectFilePath), deploymentFilePath, StandardCopyOption.REPLACE_EXISTING);
+        
+        // Verify both files were saved
+        File projectFile = new File(projectFilePath.toString());
+        File deploymentFile = new File(deploymentFilePath.toString());
+        
+        System.out.println("Project file saved: " + projectFile.exists() + " (Size: " + projectFile.length() + " bytes)");
+        System.out.println("Deployment file saved: " + deploymentFile.exists() + " (Size: " + deploymentFile.length() + " bytes)");
+        System.out.println("Project file path: " + projectFilePath.toString());
+        System.out.println("Deployment file path: " + deploymentFilePath.toString());
         
         // Return relative path for database storage
         return UPLOAD_DIR + uniqueFileName;
     }
     
     /**
-     * Delete product image
+     * Get project source upload path (persistent storage)
+     */
+    private static String getProjectUploadPath() {
+        // Direct path to your project's webapp directory
+        String projectPath = "C:" + File.separator + "Users" + File.separator + 
+                           "Chama Computers" + File.separator + "eclipse-workspace" + 
+                           File.separator + "assigment-pahanaedu" + File.separator + 
+                           "src" + File.separator + "main" + File.separator + 
+                           "webapp" + File.separator + UPLOAD_DIR.replace("/", File.separator);
+        
+        return projectPath;
+    }
+    
+    /**
+     * Get deployment upload path (immediate access)
+     */
+    private static String getDeploymentUploadPath(String webAppPath) {
+        if (webAppPath != null && !webAppPath.isEmpty()) {
+            return webAppPath + UPLOAD_DIR.replace("/", File.separator);
+        } else {
+            // Fallback to typical deployment path
+            return "C:" + File.separator + "Users" + File.separator + 
+                   "Chama Computers" + File.separator + "eclipse-workspace" + 
+                   File.separator + ".metadata" + File.separator + ".plugins" + 
+                   File.separator + "org.eclipse.wst.server.core" + File.separator + 
+                   "tmp1" + File.separator + "wtpwebapps" + File.separator + 
+                   "assigment-pahanaedu" + File.separator + UPLOAD_DIR.replace("/", File.separator);
+        }
+    }
+    
+    /**
+     * Create directory if it doesn't exist
+     */
+    private static void createDirectoryIfNotExists(String directoryPath) {
+        File directory = new File(directoryPath);
+        if (!directory.exists()) {
+            boolean created = directory.mkdirs();
+            System.out.println("Directory created: " + created + " at " + directoryPath);
+        }
+    }
+    
+    /**
+     * Delete product image from both locations
      */
     public static boolean deleteProductImage(String imagePath, String webAppPath) {
         if (imagePath == null || imagePath.isEmpty()) {
@@ -70,11 +134,61 @@ public class FileUploadHandler {
         }
         
         try {
-            Path filePath = Paths.get(webAppPath + imagePath);
-            return Files.deleteIfExists(filePath);
+            String fileName = imagePath.substring(imagePath.lastIndexOf('/') + 1);
+            
+            // Delete from project source
+            String projectPath = getProjectUploadPath() + fileName;
+            Path projectFilePath = Paths.get(projectPath);
+            boolean projectDeleted = Files.deleteIfExists(projectFilePath);
+            
+            // Delete from deployment
+            String deploymentPath = getDeploymentUploadPath(webAppPath) + fileName;
+            Path deploymentFilePath = Paths.get(deploymentPath);
+            boolean deploymentDeleted = Files.deleteIfExists(deploymentFilePath);
+            
+            System.out.println("Project file deleted: " + projectDeleted + " from " + projectPath);
+            System.out.println("Deployment file deleted: " + deploymentDeleted + " from " + deploymentPath);
+            
+            return projectDeleted || deploymentDeleted;
+            
         } catch (IOException e) {
             System.err.println("Error deleting image: " + e.getMessage());
             return false;
+        }
+    }
+    
+    /**
+     * Sync project files to deployment directory
+     * Call this during server startup to ensure all images are available
+     */
+    public static void syncProjectFilesToDeployment(String webAppPath) {
+        try {
+            String projectUploadPath = getProjectUploadPath();
+            String deploymentUploadPath = getDeploymentUploadPath(webAppPath);
+            
+            File projectDir = new File(projectUploadPath);
+            if (!projectDir.exists()) {
+                System.out.println("Project upload directory doesn't exist: " + projectUploadPath);
+                return;
+            }
+            
+            createDirectoryIfNotExists(deploymentUploadPath);
+            
+            File[] projectFiles = projectDir.listFiles();
+            if (projectFiles != null) {
+                int syncedCount = 0;
+                for (File projectFile : projectFiles) {
+                    if (projectFile.isFile()) {
+                        Path deploymentFilePath = Paths.get(deploymentUploadPath + projectFile.getName());
+                        Files.copy(projectFile.toPath(), deploymentFilePath, StandardCopyOption.REPLACE_EXISTING);
+                        syncedCount++;
+                    }
+                }
+                System.out.println("Synced " + syncedCount + " files from project to deployment directory");
+            }
+            
+        } catch (IOException e) {
+            System.err.println("Error syncing files: " + e.getMessage());
         }
     }
     
