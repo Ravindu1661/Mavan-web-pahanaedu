@@ -1,7 +1,7 @@
 /**
  * PAHANA EDU - CUSTOMER CHECKOUT JAVASCRIPT
- * Enhanced checkout functionality with step-by-step process
- * Works with CustomerController checkout endpoints
+ * Checkout process functionality with step-by-step validation
+ * Updated to work with CustomerController endpoints
  */
 
 // =============================================================================
@@ -9,24 +9,22 @@
 // =============================================================================
 
 let currentStep = 1;
-let cartData = [];
+let cart = [];
 let orderSummary = {
     subtotal: 0,
-    discount: 0,
-    shipping: 0,
-    total: 0
+    discountAmount: 0,
+    shippingCost: 0,
+    finalTotal: 0
 };
-let appliedPromoCode = null;
-let currentPromoData = null;
-let customerData = {};
-let isProcessingOrder = false;
+let appliedPromo = null;
+let isProcessing = false;
 
-// API endpoints - Match CustomerController URLs
+// API endpoints - Updated to match CustomerController URLs
 const API_ENDPOINTS = {
-    checkout: 'customer/checkout',
     cart: 'customer/cart',
-    promo: 'customer/promo-validate',
-    profile: 'customer/profile'
+    checkout: 'customer/checkout',
+    profile: 'customer/profile',
+    promo: 'customer/promo-validate'
 };
 
 // =============================================================================
@@ -34,54 +32,42 @@ const API_ENDPOINTS = {
 // =============================================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeCheckout();
+    initializeCheckoutPage();
 });
 
-async function initializeCheckout() {
+async function initializeCheckoutPage() {
     try {
-        showLoadingOverlay('Initializing checkout...');
+        showLoadingOverlay('Loading checkout...');
         
-        // Initialize scroll animations
+        // Initialize animations and event listeners
         initializeScrollAnimations();
-        
-        // Load customer profile if logged in
-        await loadCustomerProfile();
-        
-        // Validate and load cart
-        await validateAndLoadCart();
-        
-        // Initialize event listeners
         initializeEventListeners();
         
-        // Initialize first step
-        initializeStep(1);
+        // Validate cart and load data
+        await validateAndLoadCart();
+        await loadCustomerProfile();
+        
+        // Initialize checkout process
+        initializeCheckoutSteps();
+        updateOrderSummary();
         
         hideLoadingOverlay();
         
     } catch (error) {
         console.error('Failed to initialize checkout:', error);
-        showNotification('Failed to initialize checkout. Please try again.', 'error');
+        showNotification('Failed to load checkout. Please try again.', 'error');
         hideLoadingOverlay();
-        
-        // Redirect to cart if major error
-        setTimeout(() => {
-            window.location.href = 'customer/cart';
-        }, 3000);
     }
 }
 
 function initializeEventListeners() {
-    // Form validation on input
-    const form = document.getElementById('shippingForm');
-    if (form) {
-        const inputs = form.querySelectorAll('input, textarea');
-        inputs.forEach(input => {
-            input.addEventListener('blur', validateField);
-            input.addEventListener('input', clearFieldError);
-        });
+    // Form validation
+    const shippingForm = document.getElementById('shippingForm');
+    if (shippingForm) {
+        shippingForm.addEventListener('input', validateShippingForm);
     }
     
-    // Shipping method selection
+    // Shipping method change
     const shippingMethods = document.querySelectorAll('input[name="shippingMethod"]');
     shippingMethods.forEach(method => {
         method.addEventListener('change', updateShippingCost);
@@ -90,7 +76,7 @@ function initializeEventListeners() {
     // Payment method selection
     const paymentMethods = document.querySelectorAll('input[name="paymentMethod"]');
     paymentMethods.forEach(method => {
-        method.addEventListener('change', updatePaymentMethod);
+        method.addEventListener('change', handlePaymentMethodChange);
     });
     
     // Promo code functionality
@@ -98,15 +84,16 @@ function initializeEventListeners() {
     if (promoInput) {
         promoInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 applyCheckoutPromo();
             }
         });
     }
     
-    // Terms checkbox
-    const termsCheckbox = document.getElementById('agreeTerms');
-    if (termsCheckbox) {
-        termsCheckbox.addEventListener('change', updatePlaceOrderButton);
+    // Terms and conditions
+    const agreeTerms = document.getElementById('agreeTerms');
+    if (agreeTerms) {
+        agreeTerms.addEventListener('change', validatePaymentStep);
     }
 }
 
@@ -131,8 +118,79 @@ function initializeScrollAnimations() {
 }
 
 // =============================================================================
-// DATA LOADING FUNCTIONS
+// CART VALIDATION AND LOADING
 // =============================================================================
+
+async function validateAndLoadCart() {
+    try {
+        // First, validate the cart
+        const validateResponse = await fetch(API_ENDPOINTS.checkout, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'action=validate-cart'
+        });
+        
+        console.log('Cart validation response status:', validateResponse.status); // Debug log
+        
+        if (!validateResponse.ok) {
+            throw new Error(`HTTP error! status: ${validateResponse.status}`);
+        }
+        
+        const validateData = await validateResponse.json();
+        console.log('Cart validation data:', validateData); // Debug log
+        
+        if (!validateData.valid) {
+            if (validateData.issues && validateData.issues.length > 0) {
+                validateData.issues.forEach(issue => {
+                    showNotification(issue, 'warning');
+                });
+            }
+            
+            // If cart is invalid, redirect back to cart
+            setTimeout(() => {
+                window.location.href = 'customer/cart';
+            }, 3000);
+            return;
+        }
+        
+        // Load cart items - handle different data structures
+        if (validateData.cartItems && validateData.cartItems.items) {
+            cart = validateData.cartItems.items;
+        } else if (validateData.cartItems && Array.isArray(validateData.cartItems)) {
+            cart = validateData.cartItems;
+        } else {
+            cart = [];
+        }
+        
+        console.log('Loaded cart items for checkout:', cart); // Debug log
+        
+        // Log image data for each cart item
+        cart.forEach((item, index) => {
+            console.log(`Cart item ${index} image data:`, {
+                productTitle: item.productTitle,
+                productImage: item.productImage
+            });
+        });
+        
+        if (cart.length === 0) {
+            showNotification('Your cart is empty. Redirecting to shop...', 'info');
+            setTimeout(() => {
+                window.location.href = 'customer-dashboard.jsp';
+            }, 2000);
+            return;
+        }
+        
+        // Display cart items in review step
+        displayOrderReview();
+        
+    } catch (error) {
+        console.error('Cart validation failed:', error);
+        showNotification('Failed to validate cart. Please try again.', 'error');
+        throw error;
+    }
+}
 
 async function loadCustomerProfile() {
     try {
@@ -145,224 +203,117 @@ async function loadCustomerProfile() {
         });
         
         if (response.ok) {
-            const data = await response.json();
-            if (data && !data.error) {
-                customerData = data;
-                prefillCustomerData();
-            }
-        }
-        
-    } catch (error) {
-        console.log('Customer profile not loaded:', error.message);
-    }
-}
-
-async function validateAndLoadCart() {
-    try {
-        const response = await fetch(API_ENDPOINTS.checkout, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'action=validate-cart'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (!data.valid) {
-            const issues = data.issues || [];
-            throw new Error(`Cart validation failed: ${issues.join(', ')}`);
-        }
-        
-        cartData = data.cartItems || [];
-        
-        if (cartData.length === 0) {
-            throw new Error('Your cart is empty');
-        }
-        
-        // Load order summary
-        await loadOrderSummary();
-        
-        // Render cart items in checkout
-        renderOrderReview();
-        renderOrderSummary();
-        
-    } catch (error) {
-        console.error('Cart validation failed:', error);
-        showNotification(error.message, 'error');
-        throw error;
-    }
-}
-
-async function loadOrderSummary() {
-    try {
-        const response = await fetch(API_ENDPOINTS.checkout, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body: 'action=calculate-total'
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        if (data && !data.error) {
-            orderSummary.subtotal = parseFloat(data.subtotal || 0);
-            orderSummary.discount = parseFloat(data.discountAmount || 0);
-            orderSummary.total = parseFloat(data.finalTotal || 0);
+            const profile = await response.json();
             
-            if (data.promoMessage && data.discountAmount > 0) {
-                showPromoMessage(data.promoMessage, 'success');
+            if (profile && !profile.error) {
+                // Pre-fill customer information
+                const customerName = document.getElementById('customerName');
+                const customerEmail = document.getElementById('customerEmail');
+                const customerPhone = document.getElementById('customerPhone');
+                
+                if (customerName) customerName.value = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+                if (customerEmail) customerEmail.value = profile.email || '';
+                if (customerPhone) customerPhone.value = profile.phone || '';
             }
         }
-        
     } catch (error) {
-        console.error('Failed to load order summary:', error);
+        console.error('Failed to load customer profile:', error);
+        // Continue without pre-filling if profile loading fails
     }
 }
 
 // =============================================================================
-// RENDERING FUNCTIONS
+// ORDER REVIEW DISPLAY
 // =============================================================================
 
-function prefillCustomerData() {
-    if (!customerData) return;
-    
-    const customerName = document.getElementById('customerName');
-    const customerEmail = document.getElementById('customerEmail');
-    const customerPhone = document.getElementById('customerPhone');
-    
-    if (customerName && customerData.firstName && customerData.lastName) {
-        customerName.value = `${customerData.firstName} ${customerData.lastName}`;
-    }
-    
-    if (customerEmail && customerData.email) {
-        customerEmail.value = customerData.email;
-    }
-    
-    if (customerPhone && customerData.phone) {
-        customerPhone.value = customerData.phone;
-    }
-}
-
-function renderOrderReview() {
+function displayOrderReview() {
     const orderItemsReview = document.getElementById('orderItemsReview');
-    if (!orderItemsReview || cartData.length === 0) return;
+    if (!orderItemsReview || cart.length === 0) return;
+    
+    console.log('Displaying order review with cart:', cart); // Debug log
     
     const html = `
         <div class="order-review-list">
-            ${cartData.map(item => createOrderReviewItemHTML(item)).join('')}
+            ${cart.map(item => createOrderReviewItem(item)).join('')}
         </div>
-        
         <div class="order-review-summary">
-            <div class="review-summary-row">
-                <span>Items (${cartData.reduce((sum, item) => sum + item.quantity, 0)})</span>
-                <span>Rs. ${orderSummary.subtotal.toFixed(2)}</span>
-            </div>
-            ${orderSummary.discount > 0 ? `
-                <div class="review-summary-row discount">
-                    <span>Discount</span>
-                    <span>- Rs. ${orderSummary.discount.toFixed(2)}</span>
-                </div>
-            ` : ''}
-            <div class="review-summary-row">
-                <span>Shipping</span>
-                <span>Free</span>
-            </div>
-            <div class="review-summary-divider"></div>
-            <div class="review-summary-row total">
-                <span>Total</span>
-                <span>Rs. ${orderSummary.total.toFixed(2)}</span>
+            <div class="review-total">
+                <span>Total Items: ${cart.reduce((sum, item) => sum + item.quantity, 0)}</span>
+                <span>Subtotal: Rs. ${cart.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0).toFixed(2)}</span>
             </div>
         </div>
     `;
     
     orderItemsReview.innerHTML = html;
+    console.log('Order review HTML generated and inserted'); // Debug log
 }
 
-function createOrderReviewItemHTML(item) {
+function createOrderReviewItem(item) {
+    console.log('Creating order review item:', item); // Debug log
+    
+    // FIXED: Handle image path properly (matching cart logic)
+    let imageSrc = item.productImage;
+    
+    // Check if imageSrc exists and is not empty
+    if (imageSrc && imageSrc.trim() !== '') {
+        // Only add 'uploads/' if it's not already there and doesn't start with http/https
+        if (!imageSrc.startsWith('http') && !imageSrc.startsWith('/') && !imageSrc.startsWith('uploads/')) {
+            imageSrc = 'uploads/' + imageSrc;
+        }
+    } else {
+        // Use default image if no image path
+        imageSrc = 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80';
+    }
+    
+    console.log('Checkout review image source:', imageSrc); // Debug log
+    
     return `
         <div class="order-review-item">
             <div class="review-item-image">
-                <img src="${item.productImage || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80'}" 
+                <img src="${imageSrc}" 
                      alt="${escapeHtml(item.productTitle)}"
-                     onerror="this.src='https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80'">
+                     onerror="this.src='https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=100&q=80'"
+                     onload="console.log('Checkout review image loaded:', this.src)">
             </div>
             <div class="review-item-details">
-                <h4 class="review-item-title">${escapeHtml(item.productTitle)}</h4>
-                <div class="review-item-price">Rs. ${parseFloat(item.unitPrice).toFixed(2)}</div>
-                <div class="review-item-quantity">Qty: ${item.quantity}</div>
+                <h4>${escapeHtml(item.productTitle)}</h4>
+                <p>Quantity: ${item.quantity}</p>
+                <p>Unit Price: Rs. ${parseFloat(item.unitPrice).toFixed(2)}</p>
             </div>
             <div class="review-item-total">
-                Rs. ${parseFloat(item.totalPrice).toFixed(2)}
+                <span>Rs. ${parseFloat(item.totalPrice).toFixed(2)}</span>
             </div>
         </div>
     `;
 }
 
-function renderOrderSummary() {
-    const summaryItems = document.getElementById('summaryItems');
-    const summarySubtotal = document.getElementById('summarySubtotal');
-    const summaryDiscount = document.getElementById('summaryDiscount');
-    const summaryDiscountRow = document.getElementById('summaryDiscountRow');
-    const summaryShipping = document.getElementById('summaryShipping');
-    const summaryTotal = document.getElementById('summaryTotal');
-    
-    if (summaryItems) {
-        const html = cartData.map(item => `
-            <div class="summary-item">
-                <div class="summary-item-info">
-                    <span class="summary-item-title">${escapeHtml(item.productTitle)}</span>
-                    <span class="summary-item-qty">x ${item.quantity}</span>
-                </div>
-                <span class="summary-item-price">Rs. ${parseFloat(item.totalPrice).toFixed(2)}</span>
-            </div>
-        `).join('');
-        
-        summaryItems.innerHTML = html;
-    }
-    
-    if (summarySubtotal) summarySubtotal.textContent = orderSummary.subtotal.toFixed(2);
-    if (summaryTotal) summaryTotal.textContent = orderSummary.total.toFixed(2);
-    if (summaryShipping) summaryShipping.textContent = orderSummary.shipping > 0 ? `Rs. ${orderSummary.shipping.toFixed(2)}` : 'Free';
-    
-    if (orderSummary.discount > 0) {
-        if (summaryDiscount) summaryDiscount.textContent = orderSummary.discount.toFixed(2);
-        if (summaryDiscountRow) summaryDiscountRow.style.display = 'flex';
-    } else {
-        if (summaryDiscountRow) summaryDiscountRow.style.display = 'none';
-    }
+// =============================================================================
+// CHECKOUT STEPS MANAGEMENT
+// =============================================================================
+
+function initializeCheckoutSteps() {
+    updateStepIndicators();
+    showStep(1);
 }
 
-// =============================================================================
-// STEP NAVIGATION
-// =============================================================================
-
 function nextStep(stepNumber) {
-    if (stepNumber === 2) {
-        // Validate step 1 (cart items are already validated)
-        showStep(2);
-    } else if (stepNumber === 3) {
-        // Validate step 2 (shipping form)
-        if (validateShippingForm()) {
-            showStep(3);
+    if (validateCurrentStep()) {
+        currentStep = stepNumber;
+        showStep(stepNumber);
+        updateStepIndicators();
+        
+        // Scroll to top of checkout section
+        const checkoutSection = document.querySelector('.checkout-section');
+        if (checkoutSection) {
+            checkoutSection.scrollIntoView({ behavior: 'smooth' });
         }
-    } else if (stepNumber === 4) {
-        // This will be handled by placeOrder function
-        return;
     }
 }
 
 function previousStep(stepNumber) {
+    currentStep = stepNumber;
     showStep(stepNumber);
+    updateStepIndicators();
 }
 
 function showStep(stepNumber) {
@@ -375,30 +326,25 @@ function showStep(stepNumber) {
     }
     
     // Show current step
-    const currentStepElement = document.getElementById(`step${stepNumber}`);
-    if (currentStepElement) {
-        currentStepElement.style.display = 'block';
+    const currentStepEl = document.getElementById(`step${stepNumber}`);
+    if (currentStepEl) {
+        currentStepEl.style.display = 'block';
     }
     
-    // Update step indicators
-    updateStepIndicators(stepNumber);
-    
-    // Update current step
-    currentStep = stepNumber;
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Update order summary based on step
+    if (stepNumber >= 2) {
+        updateOrderSummary();
+    }
 }
 
-function updateStepIndicators(activeStep) {
+function updateStepIndicators() {
     const steps = document.querySelectorAll('.step');
     steps.forEach((step, index) => {
         const stepNumber = index + 1;
-        
-        if (stepNumber < activeStep) {
+        if (stepNumber < currentStep) {
             step.classList.add('completed');
             step.classList.remove('active');
-        } else if (stepNumber === activeStep) {
+        } else if (stepNumber === currentStep) {
             step.classList.add('active');
             step.classList.remove('completed');
         } else {
@@ -407,9 +353,30 @@ function updateStepIndicators(activeStep) {
     });
 }
 
+function validateCurrentStep() {
+    switch (currentStep) {
+        case 1:
+            return validateOrderReview();
+        case 2:
+            return validateShippingForm();
+        case 3:
+            return validatePaymentStep();
+        default:
+            return true;
+    }
+}
+
 // =============================================================================
-// FORM VALIDATION
+// STEP VALIDATIONS
 // =============================================================================
+
+function validateOrderReview() {
+    if (cart.length === 0) {
+        showNotification('Your cart is empty', 'error');
+        return false;
+    }
+    return true;
+}
 
 function validateShippingForm() {
     const form = document.getElementById('shippingForm');
@@ -425,122 +392,146 @@ function validateShippingForm() {
     
     requiredFields.forEach(field => {
         const input = document.getElementById(field.id);
-        if (!input || !input.value.trim()) {
-            showFieldError(input, `${field.name} is required`);
-            isValid = false;
-        } else {
-            clearFieldError(input);
+        if (input) {
+            const value = input.value.trim();
+            if (!value) {
+                showNotification(`${field.name} is required`, 'error');
+                input.focus();
+                isValid = false;
+                return;
+            }
+            
+            // Email validation
+            if (field.id === 'customerEmail' && !isValidEmail(value)) {
+                showNotification('Please enter a valid email address', 'error');
+                input.focus();
+                isValid = false;
+                return;
+            }
         }
     });
-    
-    // Validate email format
-    const emailInput = document.getElementById('customerEmail');
-    if (emailInput && emailInput.value.trim()) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(emailInput.value.trim())) {
-            showFieldError(emailInput, 'Please enter a valid email address');
-            isValid = false;
-        }
-    }
-    
-    if (!isValid) {
-        showNotification('Please fill in all required fields correctly', 'error');
-    }
     
     return isValid;
 }
 
-function validateField(e) {
-    const input = e.target;
-    const value = input.value.trim();
+function validatePaymentStep() {
+    const agreeTerms = document.getElementById('agreeTerms');
     
-    if (input.hasAttribute('required') && !value) {
-        showFieldError(input, 'This field is required');
+    if (agreeTerms && !agreeTerms.checked) {
+        showNotification('Please agree to the terms and conditions', 'error');
+        agreeTerms.focus();
         return false;
     }
     
-    if (input.type === 'email' && value) {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(value)) {
-            showFieldError(input, 'Please enter a valid email address');
-            return false;
-        }
-    }
-    
-    clearFieldError(input);
     return true;
 }
 
-function showFieldError(input, message) {
-    if (!input) return;
-    
-    clearFieldError(input);
-    
-    input.classList.add('error');
-    
-    const errorElement = document.createElement('div');
-    errorElement.className = 'field-error';
-    errorElement.textContent = message;
-    
-    input.parentNode.appendChild(errorElement);
-}
-
-function clearFieldError(input) {
-    if (!input) return;
-    
-    input.classList.remove('error');
-    
-    const errorElement = input.parentNode.querySelector('.field-error');
-    if (errorElement) {
-        errorElement.remove();
-    }
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 
 // =============================================================================
-// SHIPPING AND PAYMENT METHODS
+// ORDER SUMMARY AND CALCULATIONS
 // =============================================================================
+
+function updateOrderSummary() {
+    if (cart.length === 0) return;
+    
+    // Calculate subtotal
+    orderSummary.subtotal = cart.reduce((sum, item) => sum + parseFloat(item.totalPrice), 0);
+    
+    // Apply shipping cost
+    updateShippingCost();
+    
+    // Calculate final total
+    orderSummary.finalTotal = orderSummary.subtotal - orderSummary.discountAmount + orderSummary.shippingCost;
+    
+    // Update summary display
+    displayOrderSummary();
+    displaySummaryItems();
+}
 
 function updateShippingCost() {
-    const selectedMethod = document.querySelector('input[name="shippingMethod"]:checked');
-    if (!selectedMethod) return;
+    const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
     
-    const shippingCost = selectedMethod.value === 'express' ? 500 : 0;
-    orderSummary.shipping = shippingCost;
-    orderSummary.total = orderSummary.subtotal - orderSummary.discount + orderSummary.shipping;
+    orderSummary.shippingCost = 0;
+    let shippingText = 'Free';
     
-    renderOrderSummary();
-    
-    // Update shipping method visual selection
-    const shippingMethods = document.querySelectorAll('.shipping-method');
-    shippingMethods.forEach(method => {
-        const radio = method.querySelector('input[type="radio"]');
-        if (radio && radio.checked) {
-            method.classList.add('active');
-        } else {
-            method.classList.remove('active');
-        }
-    });
-}
-
-function updatePaymentMethod() {
-    const paymentMethods = document.querySelectorAll('.payment-method');
-    paymentMethods.forEach(method => {
-        const radio = method.querySelector('input[type="radio"]');
-        if (radio && radio.checked) {
-            method.classList.add('active');
-        } else {
-            method.classList.remove('active');
-        }
-    });
-}
-
-function updatePlaceOrderButton() {
-    const termsCheckbox = document.getElementById('agreeTerms');
-    const placeOrderBtn = document.getElementById('placeOrderBtn');
-    
-    if (termsCheckbox && placeOrderBtn) {
-        placeOrderBtn.disabled = !termsCheckbox.checked;
+    if (selectedShipping && selectedShipping.value === 'express') {
+        orderSummary.shippingCost = 500;
+        shippingText = 'Rs. 500.00';
     }
+    
+    // Update shipping display
+    const summaryShipping = document.getElementById('summaryShipping');
+    if (summaryShipping) {
+        summaryShipping.textContent = shippingText;
+    }
+    
+    // Recalculate total
+    orderSummary.finalTotal = orderSummary.subtotal - orderSummary.discountAmount + orderSummary.shippingCost;
+    displayOrderSummary();
+}
+
+function displayOrderSummary() {
+    const summarySubtotal = document.getElementById('summarySubtotal');
+    const summaryDiscount = document.getElementById('summaryDiscount');
+    const summaryDiscountRow = document.getElementById('summaryDiscountRow');
+    const summaryTotal = document.getElementById('summaryTotal');
+    
+    if (summarySubtotal) summarySubtotal.textContent = orderSummary.subtotal.toFixed(2);
+    if (summaryDiscount) summaryDiscount.textContent = orderSummary.discountAmount.toFixed(2);
+    if (summaryTotal) summaryTotal.textContent = orderSummary.finalTotal.toFixed(2);
+    
+    if (summaryDiscountRow) {
+        summaryDiscountRow.style.display = orderSummary.discountAmount > 0 ? 'flex' : 'none';
+    }
+}
+
+function displaySummaryItems() {
+    const summaryItems = document.getElementById('summaryItems');
+    if (!summaryItems || cart.length === 0) return;
+    
+    console.log('Displaying summary items with cart:', cart); // Debug log
+    
+    const html = cart.map(item => {
+        console.log('Processing summary item:', item); // Debug log
+        
+        // FIXED: Handle image path properly (matching cart logic)
+        let imageSrc = item.productImage;
+        
+        if (imageSrc && imageSrc.trim() !== '') {
+            if (!imageSrc.startsWith('http') && !imageSrc.startsWith('/') && !imageSrc.startsWith('uploads/')) {
+                imageSrc = 'uploads/' + imageSrc;
+            }
+        } else {
+            imageSrc = 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&q=80';
+        }
+        
+        console.log('Summary item image source:', imageSrc); // Debug log
+        
+        return `
+            <div class="summary-item">
+                <div class="summary-item-image">
+                    <img src="${imageSrc}" 
+                         alt="${escapeHtml(item.productTitle)}"
+                         onerror="this.src='https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=50&q=80'"
+                         onload="console.log('Summary image loaded:', this.src)">
+                </div>
+                <div class="summary-item-info">
+                    <h4>${escapeHtml(item.productTitle)}</h4>
+                    <span>Qty: ${item.quantity} × Rs. ${parseFloat(item.unitPrice).toFixed(2)}</span>
+                </div>
+                <div class="summary-item-total">
+                    Rs. ${parseFloat(item.totalPrice).toFixed(2)}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    summaryItems.innerHTML = html;
+    console.log('Summary items HTML generated and inserted'); // Debug log
 }
 
 // =============================================================================
@@ -554,96 +545,102 @@ async function applyCheckoutPromo() {
     if (!promoInput || !promoMessage) return;
     
     const promoCode = promoInput.value.trim();
+    
     if (!promoCode) {
-        showCheckoutPromoMessage('Please enter a promo code', 'error');
+        showPromoMessage('Please enter a promo code', 'error');
         return;
     }
     
     try {
-        const response = await fetch(API_ENDPOINTS.checkout, {
+        promoMessage.textContent = 'Validating...';
+        promoMessage.className = 'promo-message info';
+        promoMessage.style.display = 'block';
+        
+        // Use the correct endpoint for promo validation
+        const response = await fetch(API_ENDPOINTS.promo, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: `action=calculate-total&promoCode=${encodeURIComponent(promoCode)}`
+            body: `code=${encodeURIComponent(promoCode)}`
         });
+        
+        console.log('Checkout promo validation response status:', response.status); // Debug log
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('Checkout promo validation data:', data); // Debug log
         
-        if (data && !data.error) {
-            orderSummary.subtotal = parseFloat(data.subtotal || 0);
-            orderSummary.discount = parseFloat(data.discountAmount || 0);
-            orderSummary.total = parseFloat(data.finalTotal || 0);
+        if (data && data.valid) {
+            appliedPromo = {
+                code: data.code,
+                description: data.description,
+                discountType: data.discountType,
+                discountValue: data.discountValue
+            };
             
-            appliedPromoCode = promoCode;
-            
-            renderOrderSummary();
-            renderOrderReview(); // Update review with new totals
-            
-            if (data.promoMessage) {
-                showCheckoutPromoMessage(data.promoMessage, orderSummary.discount > 0 ? 'success' : 'error');
+            // Calculate discount
+            if (data.discountType === 'percentage') {
+                orderSummary.discountAmount = (orderSummary.subtotal * parseFloat(data.discountValue)) / 100;
+            } else if (data.discountType === 'fixed') {
+                orderSummary.discountAmount = Math.min(parseFloat(data.discountValue), orderSummary.subtotal);
             }
             
-            if (orderSummary.discount > 0) {
-                promoInput.disabled = true;
-                
-                // Change apply button to remove button
-                const applyButton = promoInput.nextElementSibling;
-                if (applyButton) {
-                    applyButton.innerHTML = '<i class="fas fa-times"></i>';
-                    applyButton.onclick = clearCheckoutPromo;
-                    applyButton.classList.add('remove-promo');
-                }
-            }
+            updateOrderSummary();
+            showPromoMessage(`Promo code applied: ${data.description}`, 'success');
+            promoInput.value = '';
         } else {
-            showCheckoutPromoMessage(data.message || 'Invalid promo code', 'error');
+            appliedPromo = null;
+            orderSummary.discountAmount = 0;
+            updateOrderSummary();
+            showPromoMessage(data.message || 'Invalid promo code', 'error');
         }
         
     } catch (error) {
-        console.error('Promo validation failed:', error);
-        showCheckoutPromoMessage('Failed to validate promo code', 'error');
+        console.error('Promo code validation failed:', error);
+        appliedPromo = null;
+        orderSummary.discountAmount = 0;
+        updateOrderSummary();
+        showPromoMessage('Failed to validate promo code. Please try again.', 'error');
     }
 }
 
-function clearCheckoutPromo() {
-    const promoInput = document.getElementById('checkoutPromoCode');
-    const applyButton = document.querySelector('.btn-apply-promo');
-    
-    appliedPromoCode = null;
-    orderSummary.discount = 0;
-    orderSummary.total = orderSummary.subtotal + orderSummary.shipping;
-    
-    if (promoInput) {
-        promoInput.value = '';
-        promoInput.disabled = false;
-    }
-    
-    if (applyButton) {
-        applyButton.innerHTML = '<i class="fas fa-tag"></i>';
-        applyButton.onclick = applyCheckoutPromo;
-        applyButton.classList.remove('remove-promo');
-    }
-    
-    renderOrderSummary();
-    renderOrderReview();
-    showCheckoutPromoMessage('Promo code removed', 'info');
-}
-
-function showCheckoutPromoMessage(message, type) {
+function showPromoMessage(message, type) {
     const promoMessage = document.getElementById('checkoutPromoMessage');
-    if (!promoMessage) return;
+    if (promoMessage) {
+        promoMessage.textContent = message;
+        promoMessage.className = `promo-message ${type}`;
+        promoMessage.style.display = 'block';
+    }
+}
+
+// =============================================================================
+// PAYMENT METHOD HANDLING
+// =============================================================================
+
+function handlePaymentMethodChange(e) {
+    const selectedMethod = e.target.value;
     
-    promoMessage.textContent = message;
-    promoMessage.className = `promo-message ${type}`;
-    promoMessage.style.display = 'block';
+    // You can add specific handling for different payment methods here
+    console.log('Selected payment method:', selectedMethod);
     
-    setTimeout(() => {
-        promoMessage.style.display = 'none';
-    }, 5000);
+    // Update UI based on selected payment method
+    updatePaymentMethodUI(selectedMethod);
+}
+
+function updatePaymentMethodUI(method) {
+    const paymentMethods = document.querySelectorAll('.payment-method');
+    paymentMethods.forEach(methodEl => {
+        const input = methodEl.querySelector('input[type="radio"]');
+        if (input && input.value === method) {
+            methodEl.classList.add('active');
+        } else {
+            methodEl.classList.remove('active');
+        }
+    });
 }
 
 // =============================================================================
@@ -651,27 +648,21 @@ function showCheckoutPromoMessage(message, type) {
 // =============================================================================
 
 async function placeOrder() {
-    if (isProcessingOrder) return;
-    
-    // Final validation
-    if (!validateShippingForm()) {
-        showStep(2);
-        return;
-    }
-    
-    const termsCheckbox = document.getElementById('agreeTerms');
-    if (!termsCheckbox || !termsCheckbox.checked) {
-        showNotification('Please agree to the terms and conditions', 'error');
-        return;
-    }
+    if (isProcessing) return;
     
     try {
-        isProcessingOrder = true;
+        // Final validation
+        if (!validatePaymentStep()) {
+            return;
+        }
+        
+        isProcessing = true;
         showLoadingOverlay('Processing your order...');
         
         // Collect form data
         const formData = collectOrderData();
         
+        // Place the order
         const response = await fetch(API_ENDPOINTS.checkout, {
             method: 'POST',
             headers: {
@@ -684,28 +675,26 @@ async function placeOrder() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
+        const result = await response.json();
         
-        if (data.success) {
-            // Order placed successfully
-            const orderNumber = data.orderNumber;
-            showOrderConfirmation(orderNumber);
-            showStep(4);
+        if (result.success) {
+            // Show confirmation step
+            displayOrderConfirmation(result.orderNumber);
+            nextStep(4);
             
-            // Clear cart badge in navbar
+            // Update navbar cart badge
             if (typeof updateNavbarCartBadges === 'function') {
                 updateNavbarCartBadges(0);
             }
-            
         } else {
-            throw new Error(data.message || 'Failed to place order');
+            throw new Error(result.message || 'Failed to place order');
         }
         
     } catch (error) {
         console.error('Order placement failed:', error);
-        showNotification(`Order placement failed: ${error.message}`, 'error');
+        showNotification(`Failed to place order: ${error.message}`, 'error');
     } finally {
-        isProcessingOrder = false;
+        isProcessing = false;
         hideLoadingOverlay();
     }
 }
@@ -715,8 +704,8 @@ function collectOrderData() {
     const customerEmail = document.getElementById('customerEmail').value.trim();
     const customerPhone = document.getElementById('customerPhone').value.trim();
     const shippingAddress = document.getElementById('shippingAddress').value.trim();
-    const shippingMethod = document.querySelector('input[name="shippingMethod"]:checked').value;
-    const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+    const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
+    const selectedPayment = document.querySelector('input[name="paymentMethod"]:checked');
     
     const params = new URLSearchParams();
     params.append('action', 'place-order');
@@ -724,17 +713,17 @@ function collectOrderData() {
     params.append('customerEmail', customerEmail);
     params.append('customerPhone', customerPhone);
     params.append('shippingAddress', shippingAddress);
-    params.append('shippingMethod', shippingMethod);
-    params.append('paymentMethod', paymentMethod);
+    params.append('shippingMethod', selectedShipping ? selectedShipping.value : 'standard');
+    params.append('paymentMethod', selectedPayment ? selectedPayment.value : 'cod');
     
-    if (appliedPromoCode) {
-        params.append('promoCode', appliedPromoCode);
+    if (appliedPromo) {
+        params.append('promoCode', appliedPromo.code);
     }
     
     return params.toString();
 }
 
-function showOrderConfirmation(orderNumber) {
+function displayOrderConfirmation(orderNumber) {
     const confirmationOrderNumber = document.getElementById('confirmationOrderNumber');
     if (confirmationOrderNumber) {
         confirmationOrderNumber.textContent = orderNumber;
@@ -745,12 +734,12 @@ function showOrderConfirmation(orderNumber) {
 // UTILITY FUNCTIONS
 // =============================================================================
 
-function showLoadingOverlay(message = 'Processing...') {
+function showLoadingOverlay(message = 'Loading...') {
     const overlay = document.getElementById('loadingOverlay');
     if (overlay) {
-        const messageElement = overlay.querySelector('p');
-        if (messageElement) {
-            messageElement.textContent = message;
+        const loadingText = overlay.querySelector('p');
+        if (loadingText) {
+            loadingText.textContent = message;
         }
         overlay.style.display = 'flex';
         document.body.style.overflow = 'hidden';
@@ -774,12 +763,56 @@ function showNotification(message, type = 'info') {
     notification.className = `notification ${type}`;
     notification.innerHTML = `
         <div style="display: flex; align-items: center; gap: 8px;">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
             <span>${escapeHtml(message)}</span>
         </div>
     `;
     
     document.body.appendChild(notification);
+    
+    // Add styles if not already present
+    if (!document.querySelector('#notification-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'notification-styles';
+        styles.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--white);
+                color: var(--text-primary);
+                padding: 16px 20px;
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow-medium);
+                z-index: 9999;
+                transform: translateX(400px);
+                transition: transform 0.3s ease;
+                border-left: 4px solid var(--primary-color);
+                max-width: 400px;
+            }
+            
+            .notification.success {
+                border-left-color: var(--success-color);
+            }
+            
+            .notification.error {
+                border-left-color: var(--alert-color);
+            }
+            
+            .notification.warning {
+                border-left-color: #ff9800;
+            }
+            
+            .notification.info {
+                border-left-color: var(--primary-color);
+            }
+            
+            .notification.show {
+                transform: translateX(0);
+            }
+        `;
+        document.head.appendChild(styles);
+    }
     
     setTimeout(() => {
         notification.classList.add('show');
@@ -806,48 +839,10 @@ function escapeHtml(text) {
 }
 
 // =============================================================================
-// GLOBAL FUNCTION EXPORTS
+// EXPORT FOR GLOBAL ACCESS
 // =============================================================================
 
 window.nextStep = nextStep;
 window.previousStep = previousStep;
-window.placeOrder = placeOrder;
 window.applyCheckoutPromo = applyCheckoutPromo;
-window.clearCheckoutPromo = clearCheckoutPromo;
-
-// =============================================================================
-// KEYBOARD SHORTCUTS & EVENT HANDLERS
-// =============================================================================
-
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        // Close any modals or overlays
-        hideLoadingOverlay();
-    }
-    
-    // Allow Enter key navigation in forms
-    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-        const currentStepElement = document.getElementById(`step${currentStep}`);
-        if (currentStepElement) {
-            const nextButton = currentStepElement.querySelector('.btn-next, .btn-place-order');
-            if (nextButton && !nextButton.disabled) {
-                e.preventDefault();
-                nextButton.click();
-            }
-        }
-    }
-});
-
-// Handle page unload warning if order is being processed
-window.addEventListener('beforeunload', function(e) {
-    if (isProcessingOrder) {
-        e.preventDefault();
-        e.returnValue = 'Your order is being processed. Are you sure you want to leave?';
-        return e.returnValue;
-    }
-});
-
-// Initialize step indicators on load
-document.addEventListener('DOMContentLoaded', function() {
-    updateStepIndicators(1);
-});
+window.placeOrder = placeOrder;

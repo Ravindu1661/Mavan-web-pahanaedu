@@ -1,24 +1,60 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 
-<!-- Customer Navigation Bar -->
 <header class="header" id="mainHeader">
+    <!-- Existing navbar HTML (unchanged) -->
     <nav class="nav-container">
         <!-- Logo Section -->
-        <a href="index.jsp" class="logo">
-            <i class="fas fa-graduation-cap"></i>
-            <span>Pahana Edu</span>
-        </a>
+        <c:choose>
+            <c:when test="${sessionScope.isLoggedIn}">
+                <a href="customer/dashboard" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Pahana Edu</span>
+                </a>
+            </c:when>
+            <c:otherwise>
+                <a href="index.jsp" class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Pahana Edu</span>
+                </a>
+            </c:otherwise>
+        </c:choose>
 
-        <!-- Desktop Navigation Menu -->
-        <ul class="nav-menu" id="navMenu">
-            <li><a href="index.jsp#home">Home</a></li>
-            <li><a href="index.jsp#products">Books</a></li>
-            <li><a href="index.jsp#categories">Categories</a></li>
-            <li><a href="about.jsp">About</a></li>
-            <li><a href="contact.jsp">Contact</a></li>
-        </ul>
-
+     <!-- Desktop Navigation Menu -->
+<ul class="nav-menu" id="navMenu">
+    <li>
+        <c:choose>
+            <c:when test="${sessionScope.isLoggedIn}">
+                <a href="customer/dashboard">Home</a>
+            </c:when>
+            <c:otherwise>
+                <a href="index.jsp#home">Home</a>
+            </c:otherwise>
+        </c:choose>
+    </li>
+    <li>
+        <c:choose>
+            <c:when test="${sessionScope.isLoggedIn}">
+                <a href="customer/dashboard#products">Books</a>
+            </c:when>
+            <c:otherwise>
+                <a href="index.jsp#features">Books</a>
+            </c:otherwise>
+        </c:choose>
+    </li>
+    <li>
+        <c:choose>
+            <c:when test="${sessionScope.isLoggedIn}">
+                <a href="customer/dashboard#categories">Categories</a>
+            </c:when>
+			<c:otherwise>
+            <a href="index.jsp#categories">Categories</a>
+     	   </c:otherwise>
+        </c:choose>
+    </li>
+    <li><a href="index.jsp#about">About</a></li>
+    <li><a href="index.jsp#contact">Contact</a></li>
+</ul>
         <!-- User Actions -->
         <div class="nav-actions">
             <c:choose>
@@ -56,15 +92,10 @@
                                 <a href="customer/profile" class="dropdown-item">
                                     <i class="fas fa-user-edit"></i>
                                     <span>Profile Settings</span>
-                                </a>
-                                <a href="customer/wishlist" class="dropdown-item">
-                                    <i class="fas fa-heart"></i>
-                                    <span>Wishlist</span>
-                                </a>
-                                
+                                </a>                        
                                 <div class="dropdown-divider"></div>
                                 
-                                <a href="javascript:void(0)" onclick="handleLogout()" class="dropdown-item logout">
+                                <a href="javascript:void(0)" onclick="showLogoutConfirm()" class="dropdown-item logout">
                                     <i class="fas fa-sign-out-alt"></i>
                                     <span>Logout</span>
                                 </a>
@@ -117,22 +148,49 @@
                 </div>
             </c:if>
             
-            <!-- Mobile Menu Items -->
-            <ul class="mobile-menu-items">
-                <li><a href="index.jsp#home" onclick="closeMobileMenu()">Home</a></li>
-                <li><a href="index.jsp#products" onclick="closeMobileMenu()">Books</a></li>
-                <li><a href="index.jsp#categories" onclick="closeMobileMenu()">Categories</a></li>
-                <li><a href="about.jsp" onclick="closeMobileMenu()">About</a></li>
-                <li><a href="contact.jsp" onclick="closeMobileMenu()">Contact</a></li>
-                
-                <c:if test="${sessionScope.isLoggedIn}">
-                    <li class="menu-divider"></li>
-                    <li><a href="customer/dashboard" onclick="closeMobileMenu()">Dashboard</a></li>
-                    <li><a href="customer/orders" onclick="closeMobileMenu()">My Orders</a></li>
-                    <li><a href="customer/profile" onclick="closeMobileMenu()">Profile Settings</a></li>
-                    <li><a href="customer/wishlist" onclick="closeMobileMenu()">Wishlist</a></li>
-                </c:if>
-            </ul>
+           <!-- Mobile Menu Items -->
+<ul class="mobile-menu-items">
+    <li>
+        <c:choose>
+            <c:when test="${sessionScope.isLoggedIn}">
+                <a href="customer/dashboard" onclick="closeMobileMenu()">Home</a>
+            </c:when>
+            <c:otherwise>
+                <a href="index.jsp#home" onclick="closeMobileMenu()">Home</a>
+            </c:otherwise>
+        </c:choose>
+    </li>
+    <li>
+        <c:choose>
+            <c:when test="${sessionScope.isLoggedIn}">
+                <a href="customer/dashboard#products" onclick="closeMobileMenu()">Books</a>
+            </c:when>
+            <c:otherwise>
+                <a href="index.jsp#features" onclick="closeMobileMenu()">Books</a>
+            </c:otherwise>
+        </c:choose>
+    </li>
+    <li>
+        <c:choose>
+            <c:when test="${sessionScope.isLoggedIn}">
+                <a href="customer/dashboard#categories" onclick="closeMobileMenu()">Categories</a>
+            </c:when>
+ 		<c:otherwise>
+            <a href="index.jsp#categories" onclick="closeMobileMenu()">Categories</a>
+        </c:otherwise>
+        </c:choose>
+    </li>
+    <li><a href="index.jsp#about" onclick="closeMobileMenu()">About</a></li>
+    <li><a href="index.jsp#contact" onclick="closeMobileMenu()">Contact</a></li>
+    
+    <c:if test="${sessionScope.isLoggedIn}">
+        <li class="menu-divider"></li>
+        <li><a href="customer/dashboard" onclick="closeMobileMenu()">Dashboard</a></li>
+        <li><a href="customer/orders" onclick="closeMobileMenu()">My Orders</a></li>
+        <li><a href="customer/profile" onclick="closeMobileMenu()">Profile Settings</a></li>
+        <li><a href="customer/wishlist" onclick="closeMobileMenu()">Wishlist</a></li>
+    </c:if>
+</ul>
             
             <!-- Mobile Action Buttons -->
             <div class="mobile-actions">
@@ -142,7 +200,7 @@
                             <i class="fas fa-shopping-cart"></i>
                             <span>Cart (<span id="mobileCartBadge">0</span>)</span>
                         </button>
-                        <button class="mobile-logout-btn" onclick="handleLogout()">
+                        <button class="mobile-logout-btn" onclick="showLogoutConfirm()">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Logout</span>
                         </button>
@@ -164,11 +222,26 @@
 
     <!-- Mobile Menu Overlay -->
     <div class="mobile-nav-overlay" id="mobileNavOverlay" onclick="closeMobileMenu()"></div>
+
+    <!-- Custom Confirmation Dialog -->
+    <div id="logoutConfirmDialog" class="confirm-dialog">
+        <div class="confirm-dialog-content">
+            <h3>Sign Out</h3>
+            <p>Are you sure you want to sign out of Pahana Edu?</p>
+            <div class="confirm-dialog-buttons">
+                <button class="confirm-btn" onclick="handleLogout()">Yes, Sign Out</button>
+                <button class="cancel-btn" onclick="hideLogoutConfirm()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Notification Container -->
+    <div id="customNotification" class="custom-notification"></div>
 </header>
 
-<!-- Navbar Styles -->
+<!-- Updated Navbar Styles -->
 <style>
-/* User Menu Styles */
+/* Existing styles (unchanged) */
 .user-menu {
     position: relative;
 }
@@ -442,7 +515,7 @@
 }
 
 .mobile-actions {
-    padding-top: 20px;
+    padding: 20px 0;
     border-top: 2px solid var(--background-color);
     display: flex;
     flex-direction: column;
@@ -526,6 +599,130 @@
     visibility: visible;
 }
 
+/* Custom Confirmation Dialog Styles */
+.confirm-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.confirm-dialog.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.confirm-dialog-content {
+    background: var(--white);
+    border-radius: var(--border-radius);
+    padding: 20px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+}
+
+.confirm-dialog.show .confirm-dialog-content {
+    transform: translateY(0);
+}
+
+.confirm-dialog h3 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+}
+
+.confirm-dialog p {
+    margin: 0 0 20px;
+    font-size: 16px;
+    color: var(--text-secondary);
+}
+
+.confirm-dialog-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.confirm-btn,
+.cancel-btn {
+    padding: 10px 20px;
+    border-radius: var(--border-radius-small);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    font-family: 'Inter', sans-serif;
+}
+
+.confirm-btn {
+    background: var(--alert-color);
+    color: var(--white);
+}
+
+.confirm-btn:hover {
+    background: #d32f2f;
+}
+
+.cancel-btn {
+    background: var(--background-color);
+    color: var(--text-primary);
+}
+
+.cancel-btn:hover {
+    background: var(--light-blue);
+}
+
+/* Custom Notification Styles */
+.custom-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    max-width: 300px;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateY(-20px);
+}
+
+.custom-notification.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.custom-notification.success {
+    background-color: #4caf50;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.custom-notification.error {
+    background-color: #f44336;
+    color: white;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .nav-menu,
@@ -559,7 +756,7 @@
 }
 </style>
 
-<!-- Navbar JavaScript -->
+<!-- Updated Navbar JavaScript -->
 <script>
 // Global navbar functionality
 let userMenuOpen = false;
@@ -618,31 +815,79 @@ function closeMobileMenu() {
     document.body.style.overflow = '';
 }
 
+// Show custom confirmation dialog
+function showLogoutConfirm() {
+    const dialog = document.getElementById('logoutConfirmDialog');
+    if (dialog) {
+        dialog.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+// Hide custom confirmation dialog
+function hideLogoutConfirm() {
+    const dialog = document.getElementById('logoutConfirmDialog');
+    if (dialog) {
+        dialog.classList.remove('show');
+        document.body.style.overflow = '';
+    }
+}
+
+// Show custom notification
+function showNotification(message, type = 'success') {
+    const notification = document.getElementById('customNotification');
+    if (!notification) return;
+    
+    notification.textContent = message;
+    notification.className = `custom-notification ${type} show`;
+    
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+        notification.className = 'custom-notification';
+    }, 3000);
+}
+
 // Handle logout
 async function handleLogout() {
-    if (confirm('Are you sure you want to logout?')) {
-        try {
-            const response = await fetch('logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }
-            });
-            
-            if (response.ok) {
-                // Clear any local storage
-                localStorage.clear();
-                sessionStorage.clear();
-                
-                // Redirect to login page
-                window.location.href = 'login-signup.jsp';
-            } else {
-                alert('Logout failed. Please try again.');
+    try {
+        const response = await fetch('logout', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
             }
-        } catch (error) {
-            console.error('Logout error:', error);
-            alert('Logout failed. Please try again.');
+        });
+        
+        const result = await response.json();
+        
+        // Close confirmation dialog
+        hideLogoutConfirm();
+        
+        if (response.ok && result.success) {
+            // Show success notification
+            showNotification(result.message || "You have been logged out successfully", 'success');
+            
+            // Clear client-side storage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Reset cart badges
+            updateNavbarCartBadges(0);
+            
+            // Close any open menus
+            if (userMenuOpen) toggleUserMenu();
+            if (mobileMenuOpen) closeMobileMenu();
+            
+            // Redirect to login page after a short delay
+            setTimeout(() => {
+                window.location.href = 'login-signup.jsp';
+            }, 1500);
+        } else {
+            showNotification(result.message || "Logout failed. Please try again.", 'error');
         }
+    } catch (error) {
+        console.error('Logout error:', error);
+        showNotification("An error occurred during logout. Please try again.", 'error');
+        hideLogoutConfirm();
     }
 }
 
@@ -667,17 +912,17 @@ function updateNavbarCartBadges(count) {
 
 // Close dropdowns when clicking outside
 document.addEventListener('click', function(e) {
-    // Close user menu
     const userMenu = document.querySelector('.user-menu');
     if (userMenu && !userMenu.contains(e.target) && userMenuOpen) {
         toggleUserMenu();
     }
 });
 
-// Close mobile menu on escape key
+// Close mobile menu and dialog on escape key
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && mobileMenuOpen) {
-        closeMobileMenu();
+    if (e.key === 'Escape') {
+        if (mobileMenuOpen) closeMobileMenu();
+        hideLogoutConfirm();
     }
 });
 
@@ -690,12 +935,16 @@ window.addEventListener('resize', function() {
 
 // Initialize navbar cart badge on page load
 document.addEventListener('DOMContentLoaded', function() {
-    // This will be called from the main dashboard script
     if (typeof loadCart === 'function') {
         loadCart().then(() => {
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
             updateNavbarCartBadges(totalItems);
+        }).catch(error => {
+            console.error('Error loading cart:', error);
+            updateNavbarCartBadges(0);
         });
+    } else {
+        updateNavbarCartBadges(0);
     }
 });
 </script>

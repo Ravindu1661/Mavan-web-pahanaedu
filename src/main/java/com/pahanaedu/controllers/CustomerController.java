@@ -12,7 +12,7 @@ import com.pahanaedu.services.CustomerService;
 
 /**
  * Customer Controller for Customer Portal Management
- * Handles all customer operations: product browsing, cart management, orders, profile
+ * Handles all customer operations: product browsing, cart management, orders, profile, and logout
  * Customer authentication required for most operations
  */
 @WebServlet({
@@ -23,7 +23,8 @@ import com.pahanaedu.services.CustomerService;
     "/customer/checkout",
     "/customer/orders",
     "/customer/profile",
-    "/customer/promo-validate"
+    "/customer/promo-validate",
+    "/logout" 
 })
 public class CustomerController extends HttpServlet {
     private static final long serialVersionUID = 1L;
@@ -84,6 +85,9 @@ public class CustomerController extends HttpServlet {
                         return;
                     }
                     handleProfilePage(request, response);
+                    break;
+                case "logout": // Handle logout for GET requests
+                    handleLogout(request, response);
                     break;
                 default:
                     response.sendError(HttpServletResponse.SC_NOT_FOUND, "Page not found");
@@ -148,6 +152,9 @@ public class CustomerController extends HttpServlet {
                 case "promo-validate":
                     customerService.handlePromoValidation(request, response);
                     break;
+                case "logout": // Handle logout for POST requests
+                    handleLogout(request, response);
+                    break;
                 default:
                     sendJsonError(response, "Invalid endpoint", HttpServletResponse.SC_NOT_FOUND);
                     break;
@@ -159,6 +166,36 @@ public class CustomerController extends HttpServlet {
         }
     }
     
+    /**
+     * Handle logout request
+     */
+    /**
+     * Handle logout request
+     */
+    private void handleLogout(HttpServletRequest request, HttpServletResponse response) 
+            throws IOException {
+        try {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                // Invalidate the session
+                session.invalidate();
+                System.out.println("CustomerController: Session invalidated successfully");
+
+                // Send JSON response for AJAX requests
+                response.setContentType("application/json");
+                response.setCharacterEncoding("UTF-8");
+                String jsonResponse = "{\"success\": true, \"message\": \"You have been logged out successfully\"}";
+                response.getWriter().write(jsonResponse);
+                response.getWriter().flush();
+            } else {
+                // No session found
+                sendJsonError(response, "No active session found", HttpServletResponse.SC_BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            System.err.println("CustomerController: Error during logout - " + e.getMessage());
+            sendJsonError(response, "Server error during logout", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
     /**
      * Check if customer is authenticated
      */
@@ -262,7 +299,7 @@ public class CustomerController extends HttpServlet {
             return "";
         }
         
-        // Extract the last part after /customer/
+        // Extract the last part after the last /
         String[] parts = requestURI.split("/");
         if (parts.length > 0) {
             return parts[parts.length - 1];

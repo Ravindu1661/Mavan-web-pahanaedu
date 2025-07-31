@@ -1425,11 +1425,22 @@ public class CustomerService {
         return json.toString();
     }
     
+ // Replace the existing serializeOrders method in CustomerService.java with this enhanced version
+
     private String serializeOrders(List<Order> orders) {
         StringBuilder json = new StringBuilder("[");
         for (int i = 0; i < orders.size(); i++) {
             if (i > 0) json.append(",");
             Order order = orders.get(i);
+            
+            // Get order items for each order
+            List<OrderItem> orderItems = null;
+            try {
+                orderItems = orderDAO.getOrderItems(order.getId());
+            } catch (Exception e) {
+                System.err.println("Error fetching order items for order " + order.getId() + ": " + e.getMessage());
+                orderItems = new ArrayList<>();
+            }
             
             json.append("{");
             json.append("\"id\": ").append(order.getId()).append(",");
@@ -1439,14 +1450,49 @@ public class CustomerService {
             json.append("\"finalAmount\": ").append(order.getFinalAmount()).append(",");
             json.append("\"status\": \"").append(escapeJsonString(order.getStatus())).append("\",");
             json.append("\"customerName\": \"").append(escapeJsonString(order.getCustomerName())).append("\",");
+            json.append("\"customerEmail\": \"").append(escapeJsonString(order.getCustomerEmail() != null ? order.getCustomerEmail() : "")).append("\",");
+            json.append("\"customerPhone\": \"").append(escapeJsonString(order.getCustomerPhone() != null ? order.getCustomerPhone() : "")).append("\",");
             json.append("\"shippingAddress\": \"").append(escapeJsonString(order.getShippingAddress() != null ? order.getShippingAddress() : "")).append("\",");
-            json.append("\"createdAt\": \"").append(order.getCreatedAt()).append("\"");
+            json.append("\"promoCode\": \"").append(escapeJsonString(order.getPromoCode() != null ? order.getPromoCode() : "")).append("\",");
+            json.append("\"createdAt\": \"").append(order.getCreatedAt()).append("\",");
+            
+            // Add order items array
+            json.append("\"orderItems\": [");
+            if (orderItems != null && !orderItems.isEmpty()) {
+                for (int j = 0; j < orderItems.size(); j++) {
+                    if (j > 0) json.append(",");
+                    OrderItem item = orderItems.get(j);
+                    
+                    // Get product details for additional info
+                    Product product = null;
+                    try {
+                        product = productDAO.getProductById(item.getProductId());
+                    } catch (Exception e) {
+                        System.err.println("Error fetching product details for item: " + e.getMessage());
+                    }
+                    
+                    json.append("{");
+                    json.append("\"id\": ").append(item.getId()).append(",");
+                    json.append("\"productId\": ").append(item.getProductId()).append(",");
+                    json.append("\"productTitle\": \"").append(escapeJsonString(item.getProductTitle() != null ? item.getProductTitle() : "")).append("\",");
+                    json.append("\"productAuthor\": \"").append(escapeJsonString(item.getProductAuthor() != null ? item.getProductAuthor() : "")).append("\",");
+                    json.append("\"productImage\": \"").append(escapeJsonString(product != null && product.getImagePath() != null ? product.getImagePath() : "")).append("\",");
+                    json.append("\"productIsbn\": \"").append(escapeJsonString(product != null && product.getIsbn() != null ? product.getIsbn() : "")).append("\",");
+                    json.append("\"quantity\": ").append(item.getQuantity()).append(",");
+                    json.append("\"unitPrice\": ").append(item.getUnitPrice()).append(",");
+                    json.append("\"totalPrice\": ").append(item.getTotalPrice());
+                    json.append("}");
+                }
+            }
+            json.append("]");
+            
             json.append("}");
         }
         json.append("]");
         return json.toString();
     }
-    
+ // Add this method to your CustomerService class to replace the existing serializeOrderWithItems method
+
     private String serializeOrderWithItems(Order order) {
         StringBuilder json = new StringBuilder();
         json.append("{");
@@ -1469,11 +1515,23 @@ public class CustomerService {
             for (int i = 0; i < items.size(); i++) {
                 if (i > 0) json.append(",");
                 OrderItem item = items.get(i);
+                
+                // Get product details to include image path
+                Product product = null;
+                try {
+                    product = productDAO.getProductById(item.getProductId());
+                } catch (Exception e) {
+                    System.err.println("Error fetching product details for order item: " + e.getMessage());
+                }
+                
                 json.append("{");
                 json.append("\"id\": ").append(item.getId()).append(",");
                 json.append("\"productId\": ").append(item.getProductId()).append(",");
                 json.append("\"productTitle\": \"").append(escapeJsonString(item.getProductTitle())).append("\",");
                 json.append("\"productAuthor\": \"").append(escapeJsonString(item.getProductAuthor() != null ? item.getProductAuthor() : "")).append("\",");
+                json.append("\"productImage\": \"").append(escapeJsonString(product != null && product.getImagePath() != null ? product.getImagePath() : "")).append("\",");
+                json.append("\"productIsbn\": \"").append(escapeJsonString(product != null && product.getIsbn() != null ? product.getIsbn() : "")).append("\",");
+                json.append("\"productDescription\": \"").append(escapeJsonString(product != null && product.getDescription() != null ? product.getDescription() : "")).append("\",");
                 json.append("\"quantity\": ").append(item.getQuantity()).append(",");
                 json.append("\"unitPrice\": ").append(item.getUnitPrice()).append(",");
                 json.append("\"totalPrice\": ").append(item.getTotalPrice());
@@ -1484,7 +1542,6 @@ public class CustomerService {
         json.append("]}");
         return json.toString();
     }
-    
     // Utility Methods
     private void sendJsonResponse(HttpServletResponse response, String jsonData) throws IOException {
         response.setContentType("application/json");

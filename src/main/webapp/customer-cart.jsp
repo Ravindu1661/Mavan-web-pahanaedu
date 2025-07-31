@@ -11,7 +11,7 @@
     <!-- External CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+     
     <!-- Custom CSS -->
     <link href="assets/css/index.css" rel="stylesheet">
     <link href="assets/css/customer-cart.css" rel="stylesheet">
@@ -20,7 +20,7 @@
     <!-- Include Navigation Bar -->
     <jsp:include page="includes/customer-navbar.jsp" />
 
-    <!-- Cart Page Header -->
+    <!-- Page Header -->
     <section class="page-header">
         <div class="header-container">
             <div class="breadcrumb fade-in">
@@ -39,130 +39,101 @@
         </div>
     </section>
 
-    <!-- Cart Content -->
-    <section class="cart-section">
-        <div class="cart-container">
-            <!-- Cart Items -->
-            <div class="cart-content-grid">
-                <div class="cart-items-section">
-                    <div class="cart-header fade-in">
-                        <h2>Cart Items</h2>
-                        <div class="cart-actions">
-                            <button class="btn-clear-cart" onclick="clearEntireCart()">
-                                <i class="fas fa-trash"></i>
-                                Clear Cart
-                            </button>
-                            <a href="customer-dashboard.jsp#products" class="btn-continue-shopping">
-                                <i class="fas fa-arrow-left"></i>
-                                Continue Shopping
-                            </a>
-                        </div>
-                    </div>
-                    
-                    <div class="cart-items-container" id="cartItemsContainer">
-                        <!-- Loading State -->
-                        <div class="loading-state" id="cartLoadingState">
-                            <div class="spinner"></div>
-                            <p>Loading your cart...</p>
-                        </div>
-                        
-                        <!-- Empty Cart State -->
-                        <div class="empty-cart-state" id="emptyCartState" style="display: none;">
-                            <div class="empty-cart-content">
-                                <i class="fas fa-shopping-cart"></i>
-                                <h3>Your cart is empty</h3>
-                                <p>Looks like you haven't added any books to your cart yet.</p>
-                                <a href="customer-dashboard.jsp#products" class="btn-start-shopping">
-                                    <i class="fas fa-search"></i>
-                                    Start Shopping
-                                </a>
-                            </div>
-                        </div>
-                        
-                        <!-- Cart Items List -->
-                        <div class="cart-items-list" id="cartItemsList" style="display: none;">
-                            <!-- Cart items will be populated here -->
-                        </div>
+    <!-- Main Cart Content -->
+    <section class="cart-container">
+        <div class="cart-layout">
+            <!-- Cart Items Section -->
+            <div class="cart-items-section">
+                <!-- Cart Header -->
+                <div class="cart-header fade-in">
+                    <h2><i class="fas fa-list"></i> Cart Items</h2>
+                    <div class="cart-actions">
+                        <button class="btn btn-clear" onclick="clearEntireCart()">
+                            <i class="fas fa-trash-alt"></i>
+                            Clear Cart
+                        </button>
+                        <a href="customer-dashboard.jsp#products" class="btn btn-continue">
+                            <i class="fas fa-arrow-left"></i>
+                            Continue Shopping
+                        </a>
                     </div>
                 </div>
-                
-                <!-- Cart Summary -->
-                <div class="cart-summary-section">
-                    <div class="cart-summary-card fade-in" id="cartSummaryCard" style="display: none;">
-                        <div class="summary-header">
-                            <h3><i class="fas fa-calculator"></i> Order Summary</h3>
-                        </div>
-                        
-                        <div class="summary-content">
-                            <div class="summary-row">
-                                <span>Items (<span id="totalItemsCount">0</span>)</span>
-                                <span>Rs. <span id="subtotalAmount">0.00</span></span>
-                            </div>
-                            
-                            <div class="summary-row">
-                                <span>Shipping</span>
-                                <span class="shipping-free">Free</span>
-                            </div>
-                            
-                            <div class="promo-section">
-                                <div class="promo-input-container">
-                                    <input type="text" id="promoCodeInput" placeholder="Enter promo code">
-                                    <button class="btn-apply-promo" onclick="applyPromoCode()">
-                                        <i class="fas fa-tag"></i>
-                                        Apply
-                                    </button>
-                                </div>
-                                <div class="promo-message" id="promoMessage"></div>
-                            </div>
-                            
-                            <div class="applied-promo" id="appliedPromo" style="display: none;">
-                                <div class="summary-row promo-discount">
-                                    <span>Discount</span>
-                                    <span class="discount-amount">- Rs. <span id="discountAmount">0.00</span></span>
-                                </div>
-                            </div>
-                            
-                            <div class="summary-divider"></div>
-                            
-                            <div class="summary-row total-row">
-                                <span>Total</span>
-                                <span class="total-amount">Rs. <span id="totalAmount">0.00</span></span>
-                            </div>
-                            
-                            <div class="checkout-actions">
-                                <c:choose>
-                                    <c:when test="${sessionScope.isLoggedIn}">
-                                        <button class="btn-checkout" onclick="proceedToCheckout()">
-                                            <i class="fas fa-credit-card"></i>
-                                            Proceed to Checkout
-                                        </button>
-                                    </c:when>
-                                    <c:otherwise>
-                                        <a href="login-signup.jsp" class="btn-checkout">
-                                            <i class="fas fa-sign-in-alt"></i>
-                                            Login to Checkout
-                                        </a>
-                                    </c:otherwise>
-                                </c:choose>
-                                
-                                <div class="payment-methods">
-                                    <span>We accept:</span>
-                                    <div class="payment-icons">
-                                        <i class="fab fa-cc-visa"></i>
-                                        <i class="fab fa-cc-mastercard"></i>
-                                        <i class="fab fa-cc-paypal"></i>
-                                        <i class="fas fa-money-bill-wave"></i>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
+                <!-- Loading State -->
+                <div class="loading-state" id="cartLoadingState">
+                    <div class="spinner"></div>
+                    <p>Loading your cart...</p>
+                </div>
+
+                <!-- Empty Cart State -->
+                <div class="empty-cart" id="emptyCartState" style="display: none;">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>Your cart is empty</h3>
+                    <p>Looks like you haven't added any books to your cart yet.</p>
+                    <a href="customer-dashboard.jsp#products" class="btn-shop">
+                        <i class="fas fa-book"></i>
+                        Start Shopping
+                    </a>
+                </div>
+
+                <!-- Cart Items List -->
+                <div class="cart-items-list" id="cartItemsList" style="display: none;">
+                    <!-- Cart items will be populated here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="order-summary fade-in" id="orderSummary" style="display: none;">
+                <div class="summary-header">
+                    <i class="fas fa-calculator"></i>
+                    <h3>Order Summary</h3>
+                </div>
+
+                <div class="summary-content">
+                    <div class="summary-row">
+                        <span>Items (<span id="totalItemsCount">0</span>)</span>
+                        <span>Rs. <span id="subtotalAmount">0.00</span></span>
                     </div>
-                    
-                    <!-- Recently Viewed -->
-                    <div class="recently-viewed-section fade-in">
-                        <h3><i class="fas fa-eye"></i> You Might Also Like</h3>
-                        <div class="suggested-products" id="suggestedProducts">
-                            <!-- Suggested products will be populated here -->
+
+                    <div class="shipping-info">
+                        <i class="fas fa-truck"></i>
+                        <strong>Free Shipping</strong> on all orders
+                    </div>
+
+                    <div class="summary-row total">
+                        <span>Total</span>
+                        <span>Rs. <span id="totalAmount">0.00</span></span>
+                    </div>
+                </div>
+
+                <div class="checkout-actions">
+                    <c:choose>
+                        <c:when test="${sessionScope.isLoggedIn}">
+                            <button class="btn-checkout" onclick="proceedToCheckout()">
+                                <i class="fas fa-credit-card"></i>
+                                Proceed to Checkout
+                            </button>
+                        </c:when>
+                        <c:otherwise>
+                            <a href="login-signup.jsp" class="btn-checkout">
+                                <i class="fas fa-sign-in-alt"></i>
+                                Login to Checkout
+                            </a>
+                        </c:otherwise>
+                    </c:choose>
+
+                    <div class="security-features">
+                        <div class="security-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Secure</span>
+                        </div>
+                        <div class="security-item">
+                            <i class="fas fa-lock"></i>
+                            <span>Encrypted</span>
+                        </div>
+                        <div class="security-item">
+                            <i class="fas fa-truck"></i>
+                            <span>Fast Delivery</span>
                         </div>
                     </div>
                 </div>
@@ -192,7 +163,7 @@
     <!-- Include Footer -->
     <jsp:include page="includes/footer.jsp" />
 
-    <!-- Custom JavaScript -->
+    <!-- JavaScript -->
     <script src="assets/js/customer-cart.js"></script>
 </body>
 </html>

@@ -178,9 +178,9 @@
     </section>
 
     <!-- Categories Section -->
-    <section class="categories-showcase">
-        <div class="categories-container">
-            <div class="section-header fade-in">
+    <section class="categories-showcase" >
+        <div class="categories-container" id="categories">
+            <div class="section-header fade-in" >
                 <div class="section-badge">Browse by Category</div>
                 <h2 class="section-title">Find Books by Subject</h2>
             </div>

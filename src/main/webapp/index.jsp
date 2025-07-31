@@ -12,7 +12,7 @@
 </head>
 <body>
     <!-- Include Navigation Bar -->
-    <jsp:include page="includes/navbar.jsp" />
+     <jsp:include page="includes/customer-navbar.jsp" />
 
     <!-- Hero Section -->
     <section class="hero" id="home">
@@ -34,11 +34,11 @@
                 </p>
 
                 <div class="hero-actions">
-                    <a href="view/trial.jsp" class="btn-primary">
+                    <a href="login-signup.jsp" class="btn-primary">
                         <i class="fas fa-rocket"></i>
                         Start Free Trial
                     </a>
-                    <a href="view/demo.jsp" class="btn-secondary">
+                    <a href="login-signup.jsp" class="btn-secondary">
                         <i class="fas fa-play"></i>
                         Watch Demo
                     </a>
@@ -82,6 +82,94 @@
         </div>
     </section>
 
+    <!-- Categories Section -->
+    <section class="categories" id="categories">
+        <div class="categories-container">
+            <div class="section-header fade-in">
+                <div class="section-badge">Book Categories</div>
+                <h2 class="section-title">Explore Our Book Categories</h2>
+                <p class="section-description">
+                    Discover books across various subjects and genres to enhance your knowledge and skills.
+                </p>
+            </div>
+
+            <div class="categories-grid">
+                <div class="category-card fade-in" onclick="goToLogin()">
+                    <div class="category-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="category-title">Educational</h3>
+                    <p class="category-description">
+                        Textbooks, reference materials, and academic resources for students and educators.
+                    </p>
+                    <span class="category-count">250+ Books</span>
+                </div>
+
+                <div class="category-card fade-in" onclick="goToLogin()">
+                    <div class="category-icon">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <h3 class="category-title">Technology</h3>
+                    <p class="category-description">
+                        Programming, software development, and IT-related books for tech professionals.
+                    </p>
+                    <span class="category-count">180+ Books</span>
+                </div>
+
+                <div class="category-card fade-in" onclick="goToLogin()">
+                    <div class="category-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <h3 class="category-title">Business</h3>
+                    <p class="category-description">
+                        Management, entrepreneurship, and business strategy books for professionals.
+                    </p>
+                    <span class="category-count">150+ Books</span>
+                </div>
+
+                <div class="category-card fade-in" onclick="goToLogin()">
+                    <div class="category-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h3 class="category-title">Literature</h3>
+                    <p class="category-description">
+                        Classic and contemporary literature, novels, and poetry collections.
+                    </p>
+                    <span class="category-count">300+ Books</span>
+                </div>
+
+                <div class="category-card fade-in" onclick="goToLogin()">
+                    <div class="category-icon">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <h3 class="category-title">Science</h3>
+                    <p class="category-description">
+                        Scientific research, discoveries, and educational science materials.
+                    </p>
+                    <span class="category-count">200+ Books</span>
+                </div>
+
+                <div class="category-card fade-in" onclick="goToLogin()">
+                    <div class="category-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="category-title">Health & Wellness</h3>
+                    <p class="category-description">
+                        Health guides, fitness books, and wellness resources for better living.
+                    </p>
+                    <span class="category-count">120+ Books</span>
+                </div>
+            </div>
+
+            <div class="categories-cta fade-in">
+                <a href="login-signup.jsp" class="btn-primary">
+                    <i class="fas fa-search"></i>
+                    Browse All Categories
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Features Section -->
     <section class="features" id="features">
         <div class="features-container">
@@ -95,7 +183,7 @@
             </div>
 
             <div class="features-grid">
-                <div class="feature-card fade-in">
+                <div class="feature-card fade-in" onclick="goToLogin()">
                     <div class="feature-icon">
                         <i class="fas fa-cash-register"></i>
                     </div>
@@ -104,12 +192,12 @@
                         Process transactions with confidence using our reliable billing interface. 
                         Generate professional invoices and track all sales in real-time.
                     </p>
-                    <a href="view/billing.jsp" class="feature-link">
+                    <span class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
+                    </span>
                 </div>
 
-                <div class="feature-card fade-in">
+                <div class="feature-card fade-in" onclick="goToLogin()">
                     <div class="feature-icon">
                         <i class="fas fa-users"></i>
                     </div>
@@ -118,12 +206,12 @@
                         Maintain comprehensive customer profiles with purchase history and preferences. 
                         Build stronger relationships with personalized service.
                     </p>
-                    <a href="view/customers.jsp" class="feature-link">
+                    <span class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
+                    </span>
                 </div>
 
-                <div class="feature-card fade-in">
+                <div class="feature-card fade-in" onclick="goToLogin()">
                     <div class="feature-icon">
                         <i class="fas fa-boxes"></i>
                     </div>
@@ -132,12 +220,12 @@
                         Monitor your book inventory with precision. Set automated alerts for low stock 
                         and manage suppliers with ease.
                     </p>
-                    <a href="view/inventory.jsp" class="feature-link">
+                    <span class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
+                    </span>
                 </div>
 
-                <div class="feature-card fade-in">
+                <div class="feature-card fade-in" onclick="goToLogin()">
                     <div class="feature-icon">
                         <i class="fas fa-chart-line"></i>
                     </div>
@@ -146,12 +234,12 @@
                         Make data-driven decisions with comprehensive business analytics. 
                         Professional reports for better business insights.
                     </p>
-                    <a href="view/reports.jsp" class="feature-link">
+                    <span class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
+                    </span>
                 </div>
 
-                <div class="feature-card fade-in">
+                <div class="feature-card fade-in" onclick="goToLogin()">
                     <div class="feature-icon">
                         <i class="fas fa-shield-alt"></i>
                     </div>
@@ -160,12 +248,12 @@
                         Enterprise-grade security with 99.9% uptime guarantee. 
                         Your data is protected with medical-grade encryption standards.
                     </p>
-                    <a href="view/security.jsp" class="feature-link">
+                    <span class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
+                    </span>
                 </div>
 
-                <div class="feature-card fade-in">
+                <div class="feature-card fade-in" onclick="goToLogin()">
                     <div class="feature-icon">
                         <i class="fas fa-mobile-alt"></i>
                     </div>
@@ -174,9 +262,9 @@
                         Access your system anywhere, anytime. Fully responsive design 
                         optimized for desktop, tablet, and mobile devices.
                     </p>
-                    <a href="view/mobile.jsp" class="feature-link">
+                    <span class="feature-link">
                         Learn More <i class="fas fa-arrow-right"></i>
-                    </a>
+                    </span>
                 </div>
             </div>
         </div>
@@ -262,7 +350,7 @@
                 </div>
             </div>
 
-            <a href="view/contact.jsp" class="btn-primary">
+            <a href="login-signup.jsp" class="btn-primary">
                 <i class="fas fa-calendar-check"></i>
                 Schedule Consultation
             </a>
@@ -274,5 +362,146 @@
 
     <!-- Custom JavaScript -->
     <script src="assets/js/index.js"></script>
+    
+    <!-- Login Redirect Script -->
+    <script>
+        function goToLogin() {
+            window.location.href = 'login-signup.jsp';
+        }
+    </script>
+    
+    <style>
+        /* Categories Section Styles */
+        .categories {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+
+        .categories-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin: 50px 0;
+        }
+
+        .category-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid rgba(0, 123, 255, 0.1);
+        }
+
+        .category-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0, 123, 255, 0.2);
+            border-color: var(--primary-color);
+        }
+
+        .category-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            color: white;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .category-card:hover .category-icon {
+            transform: scale(1.1);
+            box-shadow: 0 10px 25px rgba(0, 123, 255, 0.3);
+        }
+
+        .category-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+        }
+
+        .category-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        .category-count {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .categories-cta {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        /* Feature Cards Click Cursor */
+        .feature-card {
+            cursor: pointer;
+        }
+
+        .feature-link {
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .categories-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                margin: 30px 0;
+            }
+
+            .category-card {
+                padding: 25px;
+                text-align: center;
+            }
+
+            .category-icon {
+                margin: 0 auto 20px;
+            }
+
+            .categories {
+                padding: 60px 0;
+            }
+        }
+
+        /* Animation for category cards */
+        .category-card.fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s ease;
+        }
+
+        .category-card.fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
 </body>
 </html>
