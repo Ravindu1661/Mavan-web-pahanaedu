@@ -10,8 +10,9 @@ import com.pahanaedu.dao.UserDAO;
 import com.pahanaedu.models.User;
 
 /**
- * Simple Password Reset Service using Singleton Pattern
- * Provides basic password reset functionality
+ * Password Reset Service using Singleton Pattern
+ * Provides password reset functionality for customer accounts only
+ * Integrates with existing UserDAO and follows the same patterns as other services
  */
 public class PasswordResetService {
     
@@ -44,6 +45,8 @@ public class PasswordResetService {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("Expires", "0");
         
         PrintWriter out = null;
         
@@ -76,6 +79,19 @@ public class PasswordResetService {
                 return;
             }
             
+            // Only allow password reset for customer accounts
+            if (!User.ROLE_CUSTOMER.equals(user.getRole())) {
+                sendErrorResponse(response, out, 
+                    "Password reset is only available for customer accounts. Please contact administrator for assistance.");
+                return;
+            }
+            
+            // Check if user account is active
+            if (!user.isActive()) {
+                sendErrorResponse(response, out, "Account is inactive. Please contact administrator.");
+                return;
+            }
+            
             // Reset password
             String tempPassword = userDAO.resetPassword(email);
             
@@ -87,7 +103,7 @@ public class PasswordResetService {
                 // For now, we'll return it in the response (NOT RECOMMENDED for production)
                 String message = String.format(
                     "Password reset successful! Your temporary password is: %s\\n\\n" +
-                    "Please login with this password and change it immediately.", 
+                    "Please login with this password and change it immediately for security.", 
                     tempPassword
                 );
                 
@@ -120,6 +136,9 @@ public class PasswordResetService {
         
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("Expires", "0");
         
         PrintWriter out = null;
         
@@ -139,6 +158,11 @@ public class PasswordResetService {
                 return;
             }
             
+            if (!isValidEmail(email)) {
+                sendErrorResponse(response, out, "Please enter a valid email address");
+                return;
+            }
+            
             if (currentPassword == null || currentPassword.trim().isEmpty()) {
                 sendErrorResponse(response, out, "Current password is required");
                 return;
@@ -154,23 +178,39 @@ public class PasswordResetService {
                 return;
             }
             
-            if (newPassword.length() < 6) {
+            if (!isValidPassword(newPassword)) {
                 sendErrorResponse(response, out, "New password must be at least 6 characters long");
                 return;
             }
             
-            // Verify current password
+            email = email.trim().toLowerCase();
+            
+            // Verify current password and get user
             User user = userDAO.validateLogin(email, currentPassword);
             if (user == null) {
                 sendErrorResponse(response, out, "Current password is incorrect");
                 return;
             }
             
+            // Only allow password change for customer accounts
+            if (!User.ROLE_CUSTOMER.equals(user.getRole())) {
+                sendErrorResponse(response, out, 
+                    "Password change is only available for customer accounts. Please contact administrator for assistance.");
+                return;
+            }
+            
+            // Check if user account is active
+            if (!user.isActive()) {
+                sendErrorResponse(response, out, "Account is inactive. Please contact administrator.");
+                return;
+            }
+            
             // Update password
             if (userDAO.updatePassword(email, newPassword)) {
                 System.out.println("PasswordResetService: Password changed successfully for - " + email);
-                sendSuccessResponse(response, out, "Password changed successfully!");
+                sendSuccessResponse(response, out, "Password changed successfully! You can now login with your new password.");
             } else {
+                System.err.println("PasswordResetService: Failed to change password for - " + email);
                 sendErrorResponse(response, out, "Failed to change password. Please try again.");
             }
             
@@ -201,7 +241,18 @@ public class PasswordResetService {
     }
     
     /**
-     * Send success response
+     * Validate password strength (same as SignupService)
+     */
+    private boolean isValidPassword(String password) {
+        if (password == null) {
+            return false;
+        }
+        
+        return password.length() >= 6;
+    }
+    
+    /**
+     * Send success response (same pattern as other services)
      */
     private void sendSuccessResponse(HttpServletResponse response, PrintWriter out, String message) {
         response.setStatus(HttpServletResponse.SC_OK);
@@ -213,10 +264,12 @@ public class PasswordResetService {
         
         out.print(jsonResponse);
         out.flush();
+        
+        System.out.println("PasswordResetService: Success response sent");
     }
     
     /**
-     * Send error response
+     * Send error response (same pattern as other services)
      */
     private void sendErrorResponse(HttpServletResponse response, PrintWriter out, String message) {
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -228,10 +281,12 @@ public class PasswordResetService {
         
         out.print(jsonResponse);
         out.flush();
+        
+        System.out.println("PasswordResetService: Error response sent - " + message);
     }
     
     /**
-     * Escape JSON string
+     * Escape JSON string (same as other services)
      */
     private String escapeJsonString(String str) {
         if (str == null) return "";
