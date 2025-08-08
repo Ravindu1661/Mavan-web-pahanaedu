@@ -45,7 +45,7 @@
                         Browse Books
                     </a>
                     <c:if test="${not sessionScope.isLoggedIn}">
-                        <a href="login-signup.jsp" class="btn-secondary">
+                        <a href="#products" class="btn-secondary">
                             <i class="fas fa-user"></i>
                             Join Now
                         </a>

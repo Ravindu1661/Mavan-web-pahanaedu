@@ -84,7 +84,7 @@ public class CustomerService {
             
             // Active products count
             long activeProducts = allProducts.stream()
-                .filter(p -> "active".equals(p.getStatus()) && p.getStockQuantity() > 0)
+                .filter(p -> "active".equals(p.getStatus()))
                 .count();
             
             int totalCategories = allCategories.size();
@@ -122,7 +122,7 @@ public class CustomerService {
             
             // Get recent products (last 10 active products)
             List<Product> recentProducts = allProducts.stream()
-                .filter(p -> "active".equals(p.getStatus()) && p.getStockQuantity() > 0)
+                .filter(p -> "active".equals(p.getStatus()))
                 .sorted((p1, p2) -> p2.getCreatedAt().compareTo(p1.getCreatedAt()))
                 .limit(10)
                 .collect(java.util.stream.Collectors.toList());
@@ -204,7 +204,7 @@ public class CustomerService {
             
             // Filter only active products with stock
             List<Product> activeProducts = allProducts.stream()
-                .filter(p -> "active".equals(p.getStatus()) && p.getStockQuantity() > 0)
+                .filter(p -> "active".equals(p.getStatus()))
                 .collect(java.util.stream.Collectors.toList());
             
             sendJsonResponse(response, serializeProducts(activeProducts));
@@ -228,7 +228,7 @@ public class CustomerService {
             
             // Filter only active products with stock
             List<Product> activeResults = searchResults.stream()
-                .filter(p -> "active".equals(p.getStatus()) && p.getStockQuantity() > 0)
+                .filter(p -> "active".equals(p.getStatus()))
                 .collect(java.util.stream.Collectors.toList());
             
             sendJsonResponse(response, serializeProducts(activeResults));
@@ -251,7 +251,7 @@ public class CustomerService {
             
             // Filter active products with stock
             java.util.stream.Stream<Product> stream = allProducts.stream()
-                .filter(p -> "active".equals(p.getStatus()) && p.getStockQuantity() > 0);
+                .filter(p -> "active".equals(p.getStatus()));
             
             // Apply category filter
             if (categoryId != null && !categoryId.trim().isEmpty()) {
@@ -627,7 +627,7 @@ public class CustomerService {
             List<CartItem> validCart = new ArrayList<>();
             for (CartItem item : cart) {
                 Product product = productDAO.getProductById(item.getProductId());
-                if (product != null && "active".equals(product.getStatus()) && product.getStockQuantity() > 0) {
+                if (product != null && "active".equals(product.getStatus())) {
                     // Update price if changed
                     BigDecimal currentPrice = product.getOfferPrice() != null && product.getOfferPrice().compareTo(BigDecimal.ZERO) > 0 
                         ? product.getOfferPrice() : product.getPrice();

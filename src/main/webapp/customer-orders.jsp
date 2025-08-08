@@ -52,6 +52,7 @@
                         <option value="">All Orders</option>
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
+                        <option value="processing">Processing</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
                     </select>
@@ -112,13 +113,14 @@
                     </div>
                 </div>
 
+                <!-- CHANGED: Completed Orders to Confirmed Orders -->
                 <div class="stat-card">
-                    <div class="stat-icon completed">
-                        <i class="fas fa-check-circle"></i>
+                    <div class="stat-icon confirmed">
+                        <i class="fas fa-check"></i>
                     </div>
                     <div class="stat-info">
-                        <h3 id="completedOrders">0</h3>
-                        <p>Completed Orders</p>
+                        <h3 id="confirmedOrders">0</h3>
+                        <p>Confirmed Orders</p>
                     </div>
                 </div>
 
@@ -222,5 +224,6 @@
 
     <!-- JavaScript -->
     <script src="assets/js/customer-orders.js"></script>
+
 </body>
 </html>

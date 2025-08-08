@@ -1,6 +1,7 @@
 /**
- * PAHANA EDU - CUSTOMER ORDERS JAVASCRIPT (FIXED VERSION)
- * Complete order management with proper image paths and simplified UI
+ * PAHANA EDU - CUSTOMER ORDERS JAVASCRIPT (UPDATED VERSION)
+ * Complete order management without shipped/delivered status
+ * Confirmed orders count instead of completed orders
  */
 
 // =============================================================================
@@ -19,13 +20,12 @@ const API_ENDPOINTS = {
     orders: 'customer/orders'
 };
 
-// Order status configurations
+// Order status configurations - REMOVED shipped and delivered
 const ORDER_STATUS_CONFIG = {
     pending: { icon: 'fas fa-clock', color: '#FF9800', label: 'Pending' },
     confirmed: { icon: 'fas fa-check', color: '#17A2B8', label: 'Confirmed' },
     processing: { icon: 'fas fa-cogs', color: '#0077B6', label: 'Processing' },
-    shipped: { icon: 'fas fa-truck', color: '#9C27B0', label: 'Shipped' },
-    delivered: { icon: 'fas fa-check-circle', color: '#38B000', label: 'Delivered' },
+    completed: { icon: 'fas fa-check-circle', color: '#38B000', label: 'Completed' },
     cancelled: { icon: 'fas fa-times-circle', color: '#D00000', label: 'Cancelled' }
 };
 
@@ -179,18 +179,17 @@ function showErrorState() {
     if (pagination) pagination.style.display = 'none';
 }
 
+// UPDATED STATS CALCULATION - Confirmed Orders instead of Completed
 function updateOrdersStats() {
     const totalOrdersEl = document.getElementById('totalOrders');
     const pendingOrdersEl = document.getElementById('pendingOrders');
-    const completedOrdersEl = document.getElementById('completedOrders');
+    const confirmedOrdersEl = document.getElementById('confirmedOrders'); // Changed from completedOrders
     const totalSpentEl = document.getElementById('totalSpent');
     
     const totalOrders = allOrders.length;
-    const pendingOrders = allOrders.filter(order => 
-        ['pending', 'confirmed', 'processing'].includes(order.status)
-    ).length;
-    const completedOrders = allOrders.filter(order => 
-        ['delivered'].includes(order.status)
+    const pendingOrders = allOrders.filter(order => order.status === 'pending').length;
+    const confirmedOrders = allOrders.filter(order => 
+        ['confirmed', 'processing', 'completed'].includes(order.status) // Updated logic
     ).length;
     const totalSpent = allOrders
         .filter(order => order.status !== 'cancelled')
@@ -198,7 +197,7 @@ function updateOrdersStats() {
     
     if (totalOrdersEl) animateCounter(totalOrdersEl, totalOrders);
     if (pendingOrdersEl) animateCounter(pendingOrdersEl, pendingOrders);
-    if (completedOrdersEl) animateCounter(completedOrdersEl, completedOrders);
+    if (confirmedOrdersEl) animateCounter(confirmedOrdersEl, confirmedOrders);
     if (totalSpentEl) animateCounter(totalSpentEl, totalSpent, 'Rs. ', '.00');
 }
 
@@ -242,7 +241,7 @@ function createOrderCardHTML(order) {
     
     console.log('Creating order card for:', order);
     
-    // Get order items with proper fallback - FIXED LOGIC
+    // Get order items with proper fallback
     let orderItems = [];
     let totalItems = 0;
     
@@ -339,7 +338,7 @@ function createOrderCardHTML(order) {
                             </button>
                         ` : ''}
                         
-                        ${order.status === 'delivered' ? `
+                        ${order.status === 'completed' ? `
                             <button class="btn-reorder" onclick="reorderItems(${order.id})">
                                 <i class="fas fa-redo"></i>
                                 Reorder
@@ -351,19 +350,18 @@ function createOrderCardHTML(order) {
         </div>
     `;
 }
+
 function createOrderItemHTML(item) {
     console.log('Creating order item HTML for:', item);
     
-    // Fixed image path handling (matching createOrderDetailsItemHTML exactly)
+    // Fixed image path handling
     let imageSrc = item.productImage || item.imagePath || item.image || '';
     
     if (imageSrc && imageSrc.trim() !== '') {
-        // Only add 'uploads/' if it's not already there and doesn't start with http/https
         if (!imageSrc.startsWith('http') && !imageSrc.startsWith('/') && !imageSrc.startsWith('uploads/')) {
             imageSrc = 'uploads/' + imageSrc;
         }
     } else {
-        // Default placeholder image for books
         imageSrc = 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80';
     }
     
@@ -393,6 +391,7 @@ function createOrderItemHTML(item) {
         </div>
     `;
 }
+
 // =============================================================================
 // FILTERING AND PAGINATION
 // =============================================================================
@@ -490,7 +489,7 @@ function changePage(direction) {
 }
 
 // =============================================================================
-// ORDER DETAILS MODAL
+// ORDER DETAILS MODAL - UPDATED TIMELINE
 // =============================================================================
 
 async function viewOrderDetails(orderId) {
@@ -601,7 +600,7 @@ function displayOrderDetailsModal(order) {
         </div>
         
         <div class="order-details-shipping">
-            <h5><i class="fas fa-truck"></i> Shipping & Delivery Information</h5>
+            <h5><i class="fas fa-truck"></i> Order Progress & Delivery Information</h5>
             <div class="shipping-info-card">
                 <div class="shipping-address">
                     <div class="address-header">
@@ -616,73 +615,71 @@ function displayOrderDetailsModal(order) {
                     </div>
                 </div>
                 
-                <div class="delivery-timeline">
-                    <div class="timeline-header">
-                        <i class="fas fa-clock"></i>
-                        <strong>Order Timeline</strong>
-                    </div>
-                    <div class="timeline-content">
-                        <div class="timeline-item completed">
-                            <i class="fas fa-check-circle"></i>
-                            <span>Order Placed - ${orderDate}</span>
-                        </div>
-                        
-                        ${['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status) ? `
-                            <div class="timeline-item completed">
-                                <i class="fas fa-check-circle"></i>
-                                <span>Order Confirmed</span>
-                            </div>
-                        ` : order.status === 'pending' ? `
-                            <div class="timeline-item pending">
-                                <i class="fas fa-clock"></i>
-                                <span>Awaiting Confirmation</span>
-                            </div>
-                        ` : ''}
-                        
-                        ${['processing', 'shipped', 'delivered'].includes(order.status) ? `
-                            <div class="timeline-item completed">
-                                <i class="fas fa-cogs"></i>
-                                <span>Processing</span>
-                            </div>
-                        ` : !['cancelled'].includes(order.status) ? `
-                            <div class="timeline-item future">
-                                <i class="fas fa-circle"></i>
-                                <span>Processing</span>
-                            </div>
-                        ` : ''}
-                        
-                        ${['shipped', 'delivered'].includes(order.status) ? `
-                            <div class="timeline-item completed">
-                                <i class="fas fa-truck"></i>
-                                <span>Shipped</span>
-                            </div>
-                        ` : !['cancelled', 'pending', 'confirmed'].includes(order.status) ? `
-                            <div class="timeline-item future">
-                                <i class="fas fa-circle"></i>
-                                <span>Shipping</span>
-                            </div>
-                        ` : ''}
-                        
-                        ${order.status === 'delivered' ? `
-                            <div class="timeline-item completed">
-                                <i class="fas fa-home"></i>
-                                <span>Delivered</span>
-                            </div>
-                        ` : !['cancelled', 'pending', 'confirmed', 'processing'].includes(order.status) ? `
-                            <div class="timeline-item future">
-                                <i class="fas fa-circle"></i>
-                                <span>Delivery</span>
-                            </div>
-                        ` : ''}
-                        
-                        ${order.status === 'cancelled' ? `
-                            <div class="timeline-item cancelled">
-                                <i class="fas fa-times-circle"></i>
-                                <span>Order Cancelled</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
+				<div class="delivery-timeline">
+				    <div class="timeline-header">
+				        <i class="fas fa-clock"></i>
+				        <strong>Order Timeline</strong>
+				    </div>
+				    <div class="timeline-content">
+				        <!-- Order Placed - Always completed -->
+				        <div class="timeline-item completed">
+				            <i class="fas fa-check-circle"></i>
+				            <span>Order Placed - ${orderDate}</span>
+				        </div>
+				        
+				        <!-- Order Confirmed -->
+				        ${['confirmed', 'processing', 'completed'].includes(order.status) ? `
+				            <div class="timeline-item completed">
+				                <i class="fas fa-check-circle"></i>
+				                <span>Order Confirmed</span>
+				            </div>
+				        ` : order.status === 'pending' ? `
+				            <div class="timeline-item pending">
+				                <i class="fas fa-clock"></i>
+				                <span>Awaiting Confirmation</span>
+				            </div>
+				        ` : ''}
+				        
+				        <!-- Processing - Auto color when confirmed -->
+				        ${['processing', 'completed'].includes(order.status) ? `
+				            <div class="timeline-item completed">
+				                <i class="fas fa-cogs"></i>
+				                <span>Processing Your Order</span>
+				            </div>
+				        ` : ['confirmed'].includes(order.status) ? `
+				            <div class="timeline-item completed">
+				                <i class="fas fa-cogs"></i>
+				                <span>Processing Your Order</span>
+				            </div>
+				        ` : !['cancelled'].includes(order.status) ? `
+				            <div class="timeline-item future">
+				                <i class="fas fa-circle"></i>
+				                <span>Processing Your Order</span>
+				            </div>
+				        ` : ''}
+				        
+				        <!-- Completed - Shows delivery message -->
+				        ${order.status === 'completed' ? `
+				            <div class="timeline-item completed">
+				                <i class="fas fa-truck-fast"></i>
+				                <span>Your order will be delivered soon!</span>
+				            </div>
+				        ` : !['cancelled', 'pending'].includes(order.status) ? `
+				            <div class="timeline-item future">
+				                <i class="fas fa-truck"></i>
+				                <span>Your order will be delivered soon!</span>
+				            </div>
+				        ` : ''}
+				        
+				        <!-- Cancelled -->
+				        ${order.status === 'cancelled' ? `
+				            <div class="timeline-item cancelled">
+				                <i class="fas fa-times-circle"></i>
+				                <span>Order Cancelled</span>
+				            </div>
+				        ` : ''}
+				    </div>
+				</div>
             </div>
         </div>
         
@@ -702,20 +699,18 @@ function displayOrderDetailsModal(order) {
     
     console.log('Order details modal displayed');
 }
+
 function createOrderDetailsItemHTML(item) {
     console.log('Creating detailed order item HTML for:', item);
     
-    // Fixed image path handling (matching cart logic exactly)
+    // Fixed image path handling
     let imageSrc = item.productImage || item.imagePath || item.image || '';
     
-    // Check if imageSrc exists and is not empty
     if (imageSrc && imageSrc.trim() !== '') {
-        // Only add 'uploads/' if it's not already there and doesn't start with http/https
         if (!imageSrc.startsWith('http') && !imageSrc.startsWith('/') && !imageSrc.startsWith('uploads/')) {
             imageSrc = 'uploads/' + imageSrc;
         }
     } else {
-        // Use default image if no image path
         imageSrc = 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80';
     }
     
@@ -790,6 +785,7 @@ function createOrderDetailsItemHTML(item) {
         </div>
     `;
 }
+
 function closeOrderModal() {
     const modal = document.getElementById('orderDetailsModal');
     if (modal) {
