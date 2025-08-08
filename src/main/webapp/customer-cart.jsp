@@ -7,12 +7,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shopping Cart - Pahana Edu</title>
-    
-    <!-- External CSS -->
+
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
      
-    <!-- Custom CSS -->
+
     <link href="assets/css/index.css" rel="stylesheet">
     <link href="assets/css/customer-cart.css" rel="stylesheet">
 </head>
