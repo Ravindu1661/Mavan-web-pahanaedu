@@ -77,7 +77,7 @@ public class AdminController extends HttpServlet {
                 System.out.println("AdminController: Upload directory exists at " + uploadPath);
             }
             
-            // Sync project files to deployment directory on startup
+            // 
             String webAppPath = getServletContext().getRealPath("");
             FileUploadHandler.syncProjectFilesToDeployment(webAppPath);
             System.out.println("AdminController: Project files synced to deployment directory");
